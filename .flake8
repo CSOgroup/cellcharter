@@ -43,6 +43,7 @@ per-file-ignores =
     tests/*: D
     */__init__.py: F401
 rst-roles =
+    attr,
     class,
     func,
     ref,
