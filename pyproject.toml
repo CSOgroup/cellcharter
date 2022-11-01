@@ -21,6 +21,7 @@ urls.Source = "https://github.com/marcovarrone/cellcharter"
 urls.Home-page = "https://github.com/marcovarrone/cellcharter"
 dependencies = [
     "anndata",
+    "squidpy",
     # for debug logging (referenced from the issue template)
     "session-info"
 ]
