@@ -1,1 +1,1 @@
-from .basic import basic_preproc
+from ._build import spatial_neighbors
