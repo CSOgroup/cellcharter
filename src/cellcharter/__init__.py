@@ -1,7 +1,7 @@
 from importlib.metadata import version
 
-from . import pl, pp, tl
+from . import gr, pl, tl
 
-__all__ = ["pl", "pp", "tl"]
+__all__ = ["gr", "pl", "tl"]
 
 __version__ = version("cellcharter")
