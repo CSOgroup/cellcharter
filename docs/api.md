@@ -1,15 +1,16 @@
 # API
 
-## Preprocessing
+## Graph
 
 ```{eval-rst}
-.. module:: cellcharter.pp
+.. module:: cellcharter.gr
 .. currentmodule:: cellcharter
 
 .. autosummary::
     :toctree: generated
 
-    pp.basic_preproc
+    gr.aggregate_neighbors
+    gr.remove_long_links
 ```
 
 ## Tools
