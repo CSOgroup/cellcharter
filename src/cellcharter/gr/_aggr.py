@@ -177,7 +177,7 @@ def aggregate_neighbors(
         X_aggregated[idxs] = X_sample_aggregated
 
     if isinstance(X_aggregated, sps.dok_matrix):
-        X_aggregated = X_aggregated.tocsr
+        X_aggregated = X_aggregated.tocsr()
 
     if copy:
         return X_aggregated
