@@ -4,7 +4,6 @@ from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sps
-import torch
 from anndata import AnnData
 from scipy.sparse import spdiags
 from squidpy._constants._constants import CoordType, Transform
@@ -27,18 +26,11 @@ def _aggregate_var(adj, x):
     return mean_squared - mean * mean
 
 
-def _aggregate_std(adj, x):
-    agg_x = _aggregate_var(adj, x)
-    return torch.sqrt(torch.relu(agg_x) + 1e-5)
-
-
 def _aggregate(adj, x, method):
     if method == "mean":
         return _aggregate_mean(adj, x)
     elif method == "var":
         return _aggregate_var(adj, x)
-    elif method == "std":
-        return _aggregate_std(adj, x)
     else:
         raise NotImplementedError
 
