@@ -38,10 +38,17 @@ ignore =
     D400
     # First line should be in imperative mood; try rephrasing
     D401
+    # Block quote ends without a blank line; unexpected unindent
+    RST201
+    # Definition list ends without a blank line; unexpected unindent
+    RST203
+    # Block quote ends without a blank line; unexpected unindent
+    RST301
 exclude = .git,__pycache__,build,docs/_build,dist
 per-file-ignores =
     tests/*: D
     */__init__.py: F401
+    src/cellcharter/_constants/_pkg_constants.py: D101,D102,D106
 rst-roles =
     attr,
     class,
