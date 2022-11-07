@@ -1,12 +1,13 @@
 import numpy as np
+import squidpy as sq
 from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
 
 import cellcharter as cc
 
 
-class TestSpatialNeighbors:
-    def test_spatial_neighbors_distance_percentile(self, non_visium_adata: AnnData):
+class TestRemoveLongLinks:
+    def test_remove_long_links(self, non_visium_adata: AnnData):
         # ground-truth removing connections longer that 50th percentile
         correct_dist_perc = np.array(
             [
@@ -20,7 +21,9 @@ class TestSpatialNeighbors:
             [[0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0]]
         )
 
-        cc.gr.spatial_neighbors(non_visium_adata, dist_percentile=50)
+        sq.gr.spatial_neighbors(non_visium_adata, coord_type="generic", delaunay=True)
+        cc.gr.remove_long_links(non_visium_adata, distance_percentile=50)
+
         spatial_graph = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
         spatial_dist = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
 
