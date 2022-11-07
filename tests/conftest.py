@@ -14,3 +14,8 @@ def non_visium_adata():
     adata = AnnData(X=non_visium_coords, dtype=int)
     adata.obsm[Key.obsm.spatial] = non_visium_coords
     return adata
+
+
+@pytest.fixture()
+def adata() -> AnnData:
+    return _adata.copy()
