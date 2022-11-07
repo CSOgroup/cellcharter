@@ -16,6 +16,7 @@ def remove_long_links(
     distance_percentile: float = 99.0,
     connectivity_key: str | None = None,
     distances_key: str | None = None,
+    neighs_key: str | None = None,
     copy: bool = False,
 ) -> tuple[csr_matrix, csr_matrix] | None:
     """
@@ -35,6 +36,9 @@ def remove_long_links(
     distances_key
         Key in :attr:`anndata.AnnData.obsp` where spatial distances are stored.
         Default is: :attr:`anndata.AnnData.obsp` ``['{{Key.obsp.spatial_dist()}}']``.
+    neighs_key
+        Key in :attr:`anndata.AnnData.uns` where the parameters from gr.spatial_neighbors are stored.
+        Default is: :attr:`anndata.AnnData.uns` ``['{{Key.uns.spatial_neighs()}}']``.
 
     %(copy)s
 
@@ -43,12 +47,13 @@ def remove_long_links(
     If ``copy = True``, returns a :class:`tuple` with the new spatial connectivities and distances matrices.
 
     Otherwise, modifies the ``adata`` with the following keys:
-        - :attr:`anndata.AnnData.obsp` ``['{{key_added}}_connectivities']`` - the spatial connectivities.
-        - :attr:`anndata.AnnData.obsp` ``['{{key_added}}_distances']`` - the spatial distances.
-        - :attr:`anndata.AnnData.uns`  ``['{{key_added}}']`` - :class:`dict` containing parameters.
+        - :attr:`anndata.AnnData.obsp` ``['{{connectivity_key}}']`` - the spatial connectivities.
+        - :attr:`anndata.AnnData.obsp` ``['{{distances_key}}']`` - the spatial distances.
+        - :attr:`anndata.AnnData.uns`  ``['{{neighs_key}}']`` - :class:`dict` containing parameters.
     """
     connectivity_key = Key.obsp.spatial_conn(connectivity_key)
     distances_key = Key.obsp.spatial_dist(distances_key)
+    neighs_key = Key.uns.spatial_neighs(neighs_key)
     _assert_connectivity_key(adata, connectivity_key)
     _assert_connectivity_key(adata, distances_key)
 
@@ -66,3 +71,5 @@ def remove_long_links(
 
     if copy:
         return conns, dists
+    else:
+        adata.uns[neighs_key]["params"]["radius"] = threshold
