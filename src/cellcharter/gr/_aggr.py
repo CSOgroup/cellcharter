@@ -6,10 +6,8 @@ import numpy as np
 import scipy.sparse as sps
 from anndata import AnnData
 from scipy.sparse import spdiags
-from squidpy._constants._constants import CoordType, Transform
 from squidpy._constants._pkg_constants import Key as sqKey
-from squidpy._docs import d, inject_docs
-from squidpy._utils import NDArrayA
+from squidpy._docs import d
 from tqdm.auto import tqdm
 
 from cellcharter._constants._pkg_constants import Key
@@ -70,11 +68,11 @@ def _setdiag(array, value):
 
 def _aggregate_neighbors(
     adj: sps.spmatrix,
-    X: np.array,
+    X: np.ndarray,
     nhood_layers: list,
     aggregations: Optional[Union[str, list]] = "mean",
     disable_tqdm: bool = True,
-) -> NDArrayA:
+) -> np.ndarray:
 
     adj = adj.astype(bool)
     adj = _setdiag(adj, 0)
@@ -102,7 +100,6 @@ def _aggregate_neighbors(
 
 
 @d.dedent
-@inject_docs(t=Transform, c=CoordType)
 def aggregate_neighbors(
     adata: AnnData,
     n_layers: Union[int, list],
@@ -112,7 +109,7 @@ def aggregate_neighbors(
     sample_key: Optional[str] = None,
     out_key: Optional[str] = "X_cellcharter",
     copy: bool = False,
-) -> NDArrayA | None:
+) -> np.ndarray | None:
     """
     Aggregate the features from each neighborhood layers and concatenate them, and optionally with the cells' features, into a single vector.
 
@@ -121,7 +118,7 @@ def aggregate_neighbors(
     %(adata)s
     n_layers
         Which neighborhood layers to aggregate from.
-        If :class:`int`, the output vector includes the cells' features and the aggregated features of the neighbors until the layer at distance :attr:`n_layers`, i.e. cells|1-hop neighbors|...|``n_layers``-hop
+        If :class:`int`, the output vector includes the cells' features and the aggregated features of the neighbors until the layer at distance ``n_layers``, i.e. cells | 1-hop neighbors | ... | ``n_layers``-hop.
         If :class:`list`, every element corresponds to the distances at which the neighbors' features will be aggregated and concatenated. For example, [0, 1, 3] corresponds to cells|1-hop neighbors|3-hop neighbors.
     aggregations
         Which functions to use to aggregate the neighbors features. Default: ```mean``.
@@ -137,10 +134,10 @@ def aggregate_neighbors(
 
     Returns
     -------
-    If ``copy = True``, returns a :class:`np.array` of the features aggregated and concatenated.
+    If ``copy = True``, returns a :class:`numpy.ndarray` of the features aggregated and concatenated.
 
     Otherwise, modifies the ``adata`` with the following key:
-        - :attr:`anndata.AnnData.obsm` ``['{{out_key}}']`` - the above mentioned :class:`np.array`.
+        - :attr:`anndata.AnnData.obsm` ``['{{out_key}}']`` - the above mentioned :class:`numpy.ndarray`.
     """
     connectivity_key = sqKey.obsp.spatial_conn(connectivity_key)
     sample_key = Key.obs.sample if sample_key is None else sample_key
