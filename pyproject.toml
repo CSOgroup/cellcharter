@@ -23,7 +23,9 @@ dependencies = [
     "anndata",
     "squidpy",
     # for debug logging (referenced from the issue template)
-    "session-info"
+    "session-info",
+    "torch",
+    "pycave"
 ]
 
 [project.optional-dependencies]
@@ -58,6 +60,11 @@ testpaths = ["tests"]
 xfail_strict = true
 addopts = [
     "--import-mode=importlib",  # allow using test files with same name
+]
+filterwarnings = [
+    "ignore::anndata.OldFormatWarning",
+    "ignore:.*this fit will run with no optimizer.*",
+    "ignore:.*Consider increasing the value of the `num_workers` argument.*",
 ]
 
 [tool.isort]

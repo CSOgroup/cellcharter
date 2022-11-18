@@ -22,7 +22,8 @@
 .. autosummary::
     :toctree: generated
 
-    tl.basic_tool
+    tl.GaussianMixture
+    tl.ClusterAutoK
 ```
 
 ## Plotting
@@ -34,6 +35,5 @@
 .. autosummary::
     :toctree: generated
 
-    pl.basic_plot
-    pl.BasicClass
+    pl.plot_stability
 ```
