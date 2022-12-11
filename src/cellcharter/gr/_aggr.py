@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Optional, Union
 
 import numpy as np
@@ -50,7 +51,10 @@ def _hop(adj_hop, adj, adj_visited=None):
 def _normalize(adj):
     deg = np.array(np.sum(adj, axis=1)).squeeze()
 
-    deg_inv = 1 / deg
+    with warnings.catch_warnings():
+        # If a cell doesn't have neighbors deg = 0 -> divide by zero
+        warnings.filterwarnings(action="ignore", category=RuntimeWarning)
+        deg_inv = 1 / deg
     deg_inv[deg_inv == float("inf")] = 0
 
     return _mul_broadcast(adj, deg_inv)
