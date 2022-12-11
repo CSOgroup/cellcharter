@@ -73,7 +73,7 @@ class ClusterAutoK:
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
         self.model_params = model_params
 
-    def fit(self, adata: ad.AnnData, X_key: str = None):
+    def fit(self, adata: ad.AnnData, use_rep: str = None):
         """
         Cluster data multiple times for each number of clusters (K) in the selected range and compute the average stability for each them.
 
@@ -81,12 +81,12 @@ class ClusterAutoK:
         ----------
         adata
             Annotated data object.
-        X_key
+        use_rep
             Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model.
         """
         logging_level = logging.root.level
 
-        X = adata.X if X_key is None else adata.obsm[X_key]
+        X = adata.X if use_rep is None else adata.obsm[use_rep]
 
         set_logging_level(logging.WARNING)
 
@@ -121,15 +121,15 @@ class ClusterAutoK:
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
 
-    def predict(self, adata: ad.AnnData, X_key: str = None, k: int = None) -> pd.Categorical:
+    def predict(self, adata: ad.AnnData, use_rep: str = None, k: int = None) -> pd.Categorical:
         """
-        Predict the labels for the data in ``X_key`` using the fitted model.
+        Predict the labels for the data in ``use_rep`` using the fitted model.
 
         Parameters
         ----------
         adata
             Annotated data object.
-        X_key
+        use_rep
             Key in :attr:`anndata.AnnData.obsm` used as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
         k
             Number of clusters to predict using the fitted model. If ``None``, the number of clusters with the highest stability will be selected. If ``max_runs > 1``, the model with the largest marginal likelihood will be used among the ones fitted on ``k``.
@@ -137,7 +137,7 @@ class ClusterAutoK:
         k = self.best_k if k is None else k
         assert k is None or k in self.n_clusters
 
-        X = adata.X if X_key is None else adata.obsm[X_key]
+        X = adata.X if use_rep is None else adata.obsm[use_rep]
         return pd.Categorical(self.best_models[k].predict(X), categories=np.arange(k))
 
     @property

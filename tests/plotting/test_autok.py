@@ -25,8 +25,8 @@ class TestClusterAutoK:
         cls = cc.tl.ClusterAutoK(
             n_clusters=(2, 6), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=3
         )
-        cls.fit(adata, X_key="X_cellcharter")
+        cls.fit(adata, use_rep="X_cellcharter")
 
-        adata.obs[f"cellcharter_{cls.best_k}"] = cls.predict(adata, X_key="X_cellcharter", k=cls.best_k)
+        adata.obs[f"cellcharter_{cls.best_k}"] = cls.predict(adata, use_rep="X_cellcharter", k=cls.best_k)
 
         assert len(np.unique(adata.obs[f"cellcharter_{cls.best_k}"])) == cls.best_k

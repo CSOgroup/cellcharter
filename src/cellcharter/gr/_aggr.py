@@ -105,7 +105,7 @@ def aggregate_neighbors(
     n_layers: Union[int, list],
     aggregations: Optional[Union[str, list]] = "mean",
     connectivity_key: Optional[str] = None,
-    X_key: Optional[str] = None,
+    use_rep: Optional[str] = None,
     sample_key: Optional[str] = None,
     out_key: Optional[str] = "X_cellcharter",
     copy: bool = False,
@@ -124,7 +124,7 @@ def aggregate_neighbors(
         Which functions to use to aggregate the neighbors features. Default: ```mean``.
     connectivity_key
         Key in :attr:`anndata.AnnData.obsp` where spatial connectivities are stored.
-    X_key
+    use_rep
         Key of the features. If :class:`None`, adata.X is used. Else, the key is used to access the field in the AnnData .obsm mapping.
     sample_key
         Key in :attr:`anndata.AnnData.obs` where the sample labels are stored. Must be different from :class:`None` if adata contains multiple samples.
@@ -143,7 +143,7 @@ def aggregate_neighbors(
     sample_key = Key.obs.sample if sample_key is None else sample_key
     aggregations = str2list(aggregations)
 
-    X = adata.X if X_key is None else adata.obsm[X_key]
+    X = adata.X if use_rep is None else adata.obsm[use_rep]
 
     if isinstance(n_layers, int):
         n_layers = list(range(n_layers + 1))
