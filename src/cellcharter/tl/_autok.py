@@ -71,7 +71,7 @@ class ClusterAutoK:
         )
         self.max_runs = max_runs
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
-        self.model_params = model_params
+        self.model_params = model_params if model_params else {}
 
     def fit(self, adata: ad.AnnData, use_rep: str = None):
         """
