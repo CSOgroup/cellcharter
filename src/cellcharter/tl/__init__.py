@@ -1,2 +1,2 @@
 from ._autok import ClusterAutoK
-from ._gmm import GaussianMixture
+from ._gmm import Cluster
