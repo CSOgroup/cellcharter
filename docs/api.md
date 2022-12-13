@@ -22,7 +22,7 @@
 .. autosummary::
     :toctree: generated
 
-    tl.GaussianMixture
+    tl.Cluster
     tl.ClusterAutoK
 ```
 
