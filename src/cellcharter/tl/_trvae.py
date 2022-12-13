@@ -30,7 +30,7 @@ class TRVAE(scaTRVAE):
     latent_dim: Integer
         Bottleneck layer (z) size.
     dr_rate: Float
-        Dropout rate applied to all layers, if `dr_rate` ==0 no dropout will be applied.
+        Dropout rate applied to all layers, if `dr_rate==0` no dropout will be applied.
     use_mmd: Boolean
         If 'True' an additional MMD loss will be calculated on the latent dim. 'z' or the first decoder layer 'y'.
     mmd_on: String
