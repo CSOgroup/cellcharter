@@ -11,6 +11,8 @@
 
     gr.aggregate_neighbors
     gr.remove_long_links
+    gr.remove_intra_cluster_links
+    gr.nhood_enrichment
 ```
 
 ## Tools
@@ -36,4 +38,5 @@
     :toctree: generated
 
     pl.plot_stability
+    pl.nhood_enrichment
 ```

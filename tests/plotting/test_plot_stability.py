@@ -7,7 +7,7 @@ import cellcharter as cc
 
 class TestPlotStability:
     @pytest.mark.parametrize("dataset_name", ["imc", "mibitof"])
-    def test_spatial_proteomics(self, dataset_name):
+    def test_spatial_proteomics(self, dataset_name: str):
         download_dataset = getattr(sq.datasets, dataset_name)
         adata = download_dataset()
         if sps.issparse(adata.X):

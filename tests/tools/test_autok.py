@@ -8,7 +8,7 @@ import cellcharter as cc
 
 class TestClusterAutoK:
     @pytest.mark.parametrize("func", ["imc", "mibitof"])
-    def test_spatial_proteomics(self, func):
+    def test_spatial_proteomics(self, func: str):
         download_dataset = getattr(sq.datasets, func)
         adata = download_dataset()
         if sps.issparse(adata.X):

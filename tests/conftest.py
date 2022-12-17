@@ -1,15 +1,18 @@
 import numpy as np
 import pytest
 import scanpy as sc
+import squidpy as sq
 from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
+
+import cellcharter as cc
 
 _adata = sc.read("tests/_data/test_data.h5ad")
 _adata.raw = _adata.copy()
 
 
 @pytest.fixture()
-def non_visium_adata():
+def non_visium_adata() -> AnnData:
     non_visium_coords = np.array([[1, 0], [3, 0], [5, 6], [0, 4]])
     adata = AnnData(X=non_visium_coords, dtype=int)
     adata.obsm[Key.obsm.spatial] = non_visium_coords
@@ -19,3 +22,12 @@ def non_visium_adata():
 @pytest.fixture()
 def adata() -> AnnData:
     return _adata.copy()
+
+
+@pytest.fixture()
+def codex_mouse_spleen_adata() -> AnnData:
+    adata = cc.datasets.codex_mouse_spleen()
+
+    sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
+    cc.gr.remove_long_links(adata)
+    return adata
