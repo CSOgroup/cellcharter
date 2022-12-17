@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from anndata import AnnData
 from matplotlib.axes import Axes
+from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _maybe_set_colors
 from squidpy.pl._graph import _get_data
@@ -16,6 +17,7 @@ from squidpy.pl._graph import _get_data
 from cellcharter.pl._utils import _heatmap
 
 
+@d.dedent
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,

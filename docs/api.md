@@ -39,4 +39,5 @@
 
     pl.autok_stability
     pl.nhood_enrichment
+    pl.proportion
 ```
