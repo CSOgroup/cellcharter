@@ -37,6 +37,6 @@
 .. autosummary::
     :toctree: generated
 
-    pl.plot_stability
+    pl.autok_stability
     pl.nhood_enrichment
 ```

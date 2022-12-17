@@ -6,7 +6,7 @@ import cellcharter as cc
 
 
 class TestPlotStability:
-    @pytest.mark.parametrize("dataset_name", ["imc", "mibitof"])
+    @pytest.mark.parametrize("dataset_name", ["mibitof"])
     def test_spatial_proteomics(self, dataset_name: str):
         download_dataset = getattr(sq.datasets, dataset_name)
         adata = download_dataset()
@@ -18,4 +18,4 @@ class TestPlotStability:
 
         model = cc.tl.ClusterAutoK.load(f"tests/_models/cellcharter_autok_{dataset_name}")
 
-        cc.pl.plot_stability(model)
+        cc.pl.autok_stability(model)

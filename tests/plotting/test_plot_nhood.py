@@ -9,7 +9,6 @@ _CK = "cell type"
 key = Key.uns.nhood_enrichment(_CK)
 
 adata = sq.datasets.imc()
-print(adata)
 sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
 cc.gr.remove_long_links(adata)
 

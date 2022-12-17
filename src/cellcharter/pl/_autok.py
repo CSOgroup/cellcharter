@@ -9,7 +9,7 @@ import seaborn as sns
 from cellcharter.tl import ClusterAutoK
 
 
-def plot_stability(autok: ClusterAutoK, save: str | Path | None = None) -> None:
+def autok_stability(autok: ClusterAutoK, save: str | Path | None = None) -> None:
     """
     Plot the clustering stability.
 

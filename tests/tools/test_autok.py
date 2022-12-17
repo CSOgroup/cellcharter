@@ -7,7 +7,7 @@ import cellcharter as cc
 
 
 class TestClusterAutoK:
-    @pytest.mark.parametrize("func", ["imc", "mibitof"])
+    @pytest.mark.parametrize("func", ["mibitof"])
     def test_spatial_proteomics(self, func: str):
         download_dataset = getattr(sq.datasets, func)
         adata = download_dataset()
@@ -23,7 +23,7 @@ class TestClusterAutoK:
             "trainer_params": {"accelerator": "cpu", "enable_progress_bar": False},
         }
         cls = cc.tl.ClusterAutoK(
-            n_clusters=(2, 6), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=3
+            n_clusters=(2, 4), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=3
         )
         cls.fit(adata, use_rep="X_cellcharter")
 
