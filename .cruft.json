@@ -1,23 +1,23 @@
 {
-    "template": "https://github.com/scverse/cookiecutter-scverse",
-    "commit": "f19ba436fd40fa52382687a6a1030b1507c379fc",
-    "checkout": null,
-    "context": {
-        "cookiecutter": {
-            "project_name": "cellcharter",
-            "package_name": "cellcharter",
-            "project_description": "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data.",
-            "author_full_name": "Marco Varrone",
-            "author_email": "marco.varrone@unil.ch",
-            "github_user": "marcovarrone",
-            "project_repo": "https://github.com/marcovarrone/cellcharter",
-            "license": "BSD 3-Clause License",
-            "_copy_without_render": [
-                ".github/workflows/**.yaml",
-                "docs/_templates/autosummary/**.rst"
-            ],
-            "_template": "https://github.com/scverse/cookiecutter-scverse"
-        }
-    },
-    "directory": null
+  "template": "https://github.com/scverse/cookiecutter-scverse",
+  "commit": "c96cadaa981a71113cc97ada8e5085188ed22ed7",
+  "checkout": "v0.1.1",
+  "context": {
+    "cookiecutter": {
+      "project_name": "cellcharter",
+      "package_name": "cellcharter",
+      "project_description": "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data.",
+      "author_full_name": "Marco Varrone",
+      "author_email": "marco.varrone@unil.ch",
+      "github_user": "marcovarrone",
+      "project_repo": "https://github.com/marcovarrone/cellcharter",
+      "license": "BSD 3-Clause License",
+      "_copy_without_render": [
+        ".github/workflows/**.yaml",
+        "docs/_templates/autosummary/**.rst"
+      ],
+      "_template": "https://github.com/scverse/cookiecutter-scverse"
+    }
+  },
+  "directory": null
 }
