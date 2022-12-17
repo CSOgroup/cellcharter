@@ -29,7 +29,7 @@ class TestNhoodEnrichment:
 
     def test_only_inter(self):
         cc.gr.nhood_enrichment(adata, cluster_key=_CK)
-        assert np.all(np.isnan(adata.uns[key]["expected"].diagonal()))
+        assert np.all(np.diag(np.isnan(adata.uns[key]["expected"])))
 
     def test_symmetric(self):
         cc.gr.nhood_enrichment(adata, cluster_key=_CK, symmetric=True)
