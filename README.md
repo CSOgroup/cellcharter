@@ -1,6 +1,5 @@
 <div align="center">
-<!-- <img src="https://raw.githubusercontent.com/CSOgroup/cellcharter/main/docs/_static/cellcharter.png" width="400px"> -->
-<img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/cellcharter.png" width="400px">
+<img src="https://github.com/CSOgroup/cellcharter/raw/main/docs/_static/cellcharter.png" width="400px">
 
 **A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data.**
 
@@ -27,14 +26,14 @@
   Spatial clustering determines cellular niches characterized by specific admixing of these populations. It assigns cells to clusters based on both their intrinsic features (e.g., protein or mRNA expression), and the features of neighboring cells in the tissue.
 </p>
 <p align="center">
-  <img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/spatial_clusters.png" width="400px">
+  <img src="https://github.com/CSOgroup/cellcharter/raw/main/docs/_static/spatial_clusters.png" width="400px">
 </p>
 
 <p>
 CellCharter is able to automatically identify spatial clusters, and offers a suite of approaches for cluster characterization and comparison.
 </p>
 <p align="center">
-  <img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/cellcharter_workflow.png" width="800px">
+  <img src="https://github.com/CSOgroup/cellcharter/raw/main/docs/_static/cellcharter_workflow.png" width="800px">
 </p>
 
 ## Getting started
