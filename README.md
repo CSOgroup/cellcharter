@@ -1,13 +1,41 @@
-# cellcharter
+<div align="center">
+<!-- <img src="https://raw.githubusercontent.com/CSOgroup/cellcharter/main/docs/_static/cellcharter.png" width="400px"> -->
+<img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/cellcharter.png" width="400px">
+
+**A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data.**
+
+---
+
+<p align="center">
+  <a href="https://cellcharter.readthedocs.io/en/latest/">Documentation</a> •
+  <a href="https://cellcharter.readthedocs.io/en/latest/notebooks/codex_mouse_spleen.html">Examples</a> •
+  Paper
+</p>
 
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
 
-[badge-tests]: https://img.shields.io/github/actions/workflow/status/marcovarrone/cellcharter/test.yaml?branch=main
-[link-tests]: https://github.com/marcovarrone/cellcharter/actions/workflows/test.yml
+[badge-tests]: https://img.shields.io/github/actions/workflow/status/CSOgroup/cellcharter/test.yaml?branch=main
+[link-tests]: https://github.com/CSOgroup/cellcharter/actions/workflows/test.yml
 [badge-docs]: https://img.shields.io/readthedocs/cellcharter
 
-A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data.
+</div>
+
+## Background
+
+<p>
+  Spatial clustering determines cellular niches characterized by specific admixing of these populations. It assigns cells to clusters based on both their intrinsic features (e.g., protein or mRNA expression), and the features of neighboring cells in the tissue.
+</p>
+<p align="center">
+  <img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/spatial_clusters.png" width="400px">
+</p>
+
+<p>
+CellCharter is able to automatically identify spatial clusters, and offers a suite of approaches for cluster characterization and comparison.
+</p>
+<p align="center">
+  <img src="/mnt/ndata/varrone/curnagl_work/Packages/cellcharter-scverse/docs/_static/cellcharter_workflow.png" width="800px">
+</p>
 
 ## Getting started
 
@@ -17,40 +45,20 @@ Please refer to the [documentation][link-docs]. In particular, the
 
 ## Installation
 
-You need to have Python 3.8 or newer installed on your system. If you don't have
-Python installed, we recommend installing [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge).
+CellCharter uses [PyTorch](https://pytorch.org). If you are planning to use a GPu, make sure to download and install the correct version of PyTorch first.
 
-There are several alternative options to install cellcharter:
-
-<!--
-1) Install the latest release of `cellcharter` from `PyPI <https://pypi.org/project/cellcharter/>`_:
+Then you are ready to install CellCharter.
 
 ```bash
-pip install cellcharter
-```
--->
-
-1. Install the latest development version:
-
-```bash
-pip install git+https://github.com/marcovarrone/cellcharter.git@main
+pip install git+https://github.com/CSOgroup/cellcharter.git@main
 ```
 
-## Release notes
+## Contribution
 
-See the [changelog][changelog].
-
-## Contact
-
-For questions and help requests, you can reach out in the [scverse discourse][scverse-discourse].
-If you found a bug, please use the [issue tracker][issue-tracker].
-
-## Citation
-
-> t.b.a
+If you found a bug or you wnat to propose a new feature, please use the [issue tracker][issue-tracker].
 
 [scverse-discourse]: https://discourse.scverse.org/
-[issue-tracker]: https://github.com/marcovarrone/cellcharter/issues
+[issue-tracker]: https://github.com/CSOgroup/cellcharter/issues
 [changelog]: https://cellcharter.readthedocs.io/latest/changelog.html
 [link-docs]: https://cellcharter.readthedocs.io
 [link-api]: https://cellcharter.readthedocs.io/latest/api.html

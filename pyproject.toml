@@ -11,14 +11,14 @@ readme = "README.md"
 requires-python = ">=3.8,<3.11"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Marco Varrone"},
+    {name = "CSO group"},
 ]
 maintainers = [
     {name = "Marco Varrone", email = "marco.varrone@unil.ch"},
 ]
 urls.Documentation = "https://cellcharter.readthedocs.io/"
-urls.Source = "https://github.com/marcovarrone/cellcharter"
-urls.Home-page = "https://github.com/marcovarrone/cellcharter"
+urls.Source = "https://github.com/CSOgroup/cellcharter"
+urls.Home-page = "https://github.com/CSOgroup/cellcharter"
 dependencies = [
     "anndata",
     "squidpy",

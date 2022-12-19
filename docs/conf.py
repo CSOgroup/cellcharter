@@ -21,7 +21,7 @@ project_name = info["Name"]
 author = info["Author"]
 copyright = f"{datetime.now():%Y}, {author}."
 version = info["Version"]
-repository_url = f"https://github.com/marcovarrone/{project_name}"
+repository_url = f"https://github.com/CSOgroup/{project_name}"
 
 # The full version, including alpha/beta/rc tags
 release = info["Version"]
@@ -33,7 +33,7 @@ needs_sphinx = "4.0"
 
 html_context = {
     "display_github": True,  # Integrate GitHub
-    "github_user": "marcovarrone",  # Username
+    "github_user": "CSOgroup",  # Username
     "github_repo": project_name,  # Repo name
     "github_version": "main",  # Version
     "conf_py_path": "/docs/",  # Path in the checkout to the docs root

@@ -10,9 +10,10 @@
     :toctree: generated
 
     gr.aggregate_neighbors
+    gr.nhood_enrichment
     gr.remove_long_links
     gr.remove_intra_cluster_links
-    gr.nhood_enrichment
+
 ```
 
 ## Tools

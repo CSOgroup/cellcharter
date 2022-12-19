@@ -4,12 +4,19 @@
 
 ```{toctree}
 :hidden: true
-:maxdepth: 1
+:maxdepth: 2
+:caption: API
 
-api.md
-changelog.md
-developer_docs.md
-references.md
+graph.md
+tools.md
+plotting.md
+```
+
+```{toctree}
+:hidden: true
+:maxdepth: 2
+:caption: Tutorials
 
 notebooks/codex_mouse_spleen
+
 ```
