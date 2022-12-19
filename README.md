@@ -3,7 +3,7 @@
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
 
-[badge-tests]: https://img.shields.io/github/actions/workflow/status/marcovarrone/cellcharter/test.yml?branch=main
+[badge-tests]: https://img.shields.io/github/actions/workflow/status/marcovarrone/cellcharter/test.yaml?branch=main
 [link-tests]: https://github.com/marcovarrone/cellcharter/actions/workflows/test.yml
 [badge-docs]: https://img.shields.io/readthedocs/cellcharter
 
