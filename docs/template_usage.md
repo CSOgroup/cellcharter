@@ -1,41 +1,129 @@
-# Developer documentation
+# Using this template
 
 Welcome to the developer guidelines! This document is split into two parts:
 
 1.  The [repository setup](#setting-up-the-repository). This section is relevant primarily for the repository maintainer and shows how to connect
     continuous integration services and documents initial set-up of the repository.
-2.  The [contributor guide](#contributing-guide). It contains information relevant to all developers who want to make a contribution.
+2.  The [contributor guide](contributing.md#contributing-guide). It contains information relevant to all developers who want to make a contribution.
 
 ## Setting up the repository
+
+### First commit
+
+If you are reading this, you should have just completed the repository creation with :
+
+```bash
+cruft create https://github.com/scverse/cookiecutter-scverse
+```
+
+and you should have
+
+```
+cd cellcharter
+```
+
+into the new project directory. Now that you have created a new repository locally, the first step is to push it to github. To do this, you'd have to create a **new repository** on github.
+You can follow the instructions directly on [github quickstart guide][].
+Since `cruft` already populated the local repository of your project with all the necessary files, we suggest to _NOT_ initialize the repository with a `README.md` file or `.gitignore`, because you might encounter git conflicts on your first push.
+If you are familiar with git and knows how to handle git conflicts, you can go ahead with your preferred choice.
+
+:::{note}
+If you are looking at this document in the [cookiecutter-scverse-instance][] repository documentation, throughout this document the name of the project is `cookiecutter-scverse-instance`. Otherwise it should be replaced by your new project name: `cellcharter`.
+:::
+
+Now that your new project repository has been created on github at `https://github.com/marcovarrone/cellcharter` you can push your first commit to github.
+To do this, simply follow the instructions on your github repository page or a more verbose walkthrough here:
+
+Assuming you are in `/your/path/to/cellcharter`. Add all files and commit.
+
+```bash
+# stage all files of your new repo
+git add --all
+# commit
+git commit -m "first commit"
+```
+
+You'll notice that the command `git commit` installed a bunch of packages and triggered their execution: those are pre-commit! To read more about what they are and what they do, you can go to the related section [Pre-commit checks](#pre-commit-checks) in this document.
+
+:::{note}
+There is a chance that `git commit -m "first commit"` fails due to the `prettier` pre-commit formatting the file `.cruft.json`. No problem, you have just experienced what pre-commit checks do in action. Just go ahead and re-add the modified file and try to commit again:
+
+```bash
+ git add -u # update all tracked file
+ git commit -m "first commit"
+```
+
+:::
+
+Now that all the files of the newly created project have been committed, go ahead with the remaining steps:
+
+```bash
+# update the `origin` of your local repo with the remote github link
+git remote add origin https://github.com/marcovarrone/cellcharter.git
+# rename the default branch to main
+git branch -M main
+# push all your files to remote
+git push -u origin main
+```
+
+Your project should be now available at `https://github.com/marcovarrone/cellcharter`. While the repository at this point can be directly used, there are few remaining steps that needs to be done in order to achieve full functionality.
+
+### Coverage tests with _Codecov_
+
+Coverage tells what fraction of the code is "covered" by unit tests, thereby encouraging contributors to
+[write tests](contributing.md#writing-tests).
+To enable coverage checks, head over to [codecov][] and sign in with your GitHub account.
+You'll find more information in "getting started" section of the [codecov docs][].
+
+In the `Actions` tab of your projects' github repository, you can see that the workflows are failing due to the **Upload coverage** step. The error message in the workflow should display something like:
+
+```
+...
+    Retrying 5/5 in 2s..
+    {'detail': ErrorDetail(string='Could not find a repository, try using repo upload token', code='not_found')}
+Error: 404 Client Error: Not Found for url:
+...
+```
+
+While [codecov docs][] has a very extensive documentation on how to get started, _if_ you are using the default settings of this template we can assume that you are using [codecov][] in a github action workflow and hence you can make use of the [codecov bot][].
+
+To set it up, simply go to the [codecov app][] page and follow the instructions to activate it for your repository.
+Once the activation is completed, go back to the `Actions` tab and re-run the failing workflows.
+
+The workflows should now succeed and you will be able to find the code coverage at this link: `https://app.codecov.io/gh/marcovarrone/cellcharter`. You might have to wait couple of minutes and the coverage of this repository should be ~60%.
+
+If your repository is private, you will have to specify an additional token in the repository secrets. In brief, you need to:
+
+1. Generate a Codecov Token by clicking _setup repo_ in the codecov dashboard.
+    - If you have already set up codecov in the repository by following the previous steps, you can directly go to the codecov repo webpage.
+2. Go to _Settings_ and copy **only** the token `_______-____-...`.
+3. Go to _Settings_ of your newly created repository on GitHub.
+4. Go to _Security > Secrets > Actions_.
+5. Create new repository secret with name `CODECOV_TOKEN` and paste the token generated by codecov.
+6. Past these additional lines in `/.github/workflows.test.yaml` under the **Upload coverage** step:
+    ```bash
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+    ```
+7. Go back to github `Actions` page an re-run previously failed jobs.
 
 ### Documentation on _readthedocs_
 
 We recommend using [readthedocs.org][] (RTD) to build and host the documentation for your project.
-To enable readthedocs, head over to [their webiste][readthedocs.org] and sign in with your GitHub account.
+To enable readthedocs, head over to [their website][readthedocs.org] and sign in with your GitHub account.
 On the RTD dashboard choose "Import a Project" and follow the instructions to add your repository.
 
--   Make sure to choose the correct name of the default branch. On GitHub, the default name of the default branch has
-    recently changed from `master` to `main`.
+-   Make sure to choose the correct name of the default branch. On GitHub, the name of the default branch should be `main` (it has
+    recently changed from `master` to `main`).
 -   We recommend to enable documentation builds for pull requests (PRs). This ensures that a PR doesn't introduce changes
     that break the documentation. To do so, got to `Admin -> Advanced Settings`, check the
     `Build pull requests for this projects` option, and click `Save`. For more information, please refer to
     the [official RTD documentation](https://docs.readthedocs.io/en/stable/pull-requests.html).
 -   If you find the RTD builds are failing, you can disable the `fail_on_warning` option in `.readthedocs.yaml`.
 
-### Coverage tests with _Codecov_
-
-Coverage tells what fraction of the code is "covered" by unit tests, thereby encouraging contributors to
-[write tests](#writing-tests).
-To enable coverage checks, head over to [codecov][] and sign in with your GitHub account.
-You'll find more information in "getting started" section of the [codecov docs][].
-
-In brief, you need to:
-
-1. Generate a Codecov Token by clicking _setup repo_ in the codecov dashboard.
-2. Go to the _Settings_ of your newly created repository on GitHub.
-3. Go to _Security > Secrets > Actions_.
-4. Create new repository secret with name `CODECOV_TOKEN` and paste the token generated by codecov
-5. Go back to Github Actions page an re-run previously failed jobs.
+If your project is private, there are ways to enable docs rendering on [readthedocs.org][] but it is more cumbersome and requires a different subscription for read the docs. See a guide [here](https://docs.readthedocs.io/en/stable/guides/importing-private-repositories.html).
 
 ### Pre-commit checks
 
@@ -96,29 +184,14 @@ The following pre-commit checks are for errors and inconsistencies:
 -   **forbid-to-commit**: Make sure that `*.rej` files cannot be commited. These files are created by the
     [automated template sync](#automated-template-sync) if there's a merge conflict and need to be addressed manually.
 
-#### Notes on pre-commit checks
+### How to disable or add pre-commit checks
 
--   To ignore lint warnigs from **flake8**, see [Ignore certain lint warnings](#ignore-certain-lint-warnings).
+-   To ignore lint warnigs from **flake8**, see [Ignore certain lint warnings](#how-to-ignore-certain-lint-warnings).
 -   You can add or remove pre-commit checks by simply deleting relevant lines in the `.pre-commit-config.yaml` file.
     Some pre-commit checks have additional options that can be specified either in the `pyproject.toml` or tool-specific
     config files, such as `.prettierrc.yml` for **prettier** and `.flake8` for **flake8**.
 
-### API design
-
-Scverse ecosystem packages should operate on [AnnData][] and/or [MuData][] datastructures and typically use an API
-as originally [introduced by scanpy][scanpy-api] with the following submodules:
-
--   `pp` for preprocessing
--   `tl` for tools (that, compared to `pp` generate interpretable output, often associated with a corresponding plotting
-    function)
--   `pl` for plotting functions
-
-You may add additional submodules as appropriate. While we encourage to follow a scanpy-like API for ecosystem packages,
-there may also be good reasons to choose a different approach, e.g. using an object-oriented API.
-
-[scanpy-api]: https://scanpy.readthedocs.io/en/stable/usage-principles.html
-
-### Ignore certain lint warnings
+### How to ignore certain lint warnings
 
 The [pre-commit checks](#pre-commit-checks) include [flake8](https://flake8.pycqa.org/en/latest/) which checks
 for errors in Python files, including stylistic errors.
@@ -142,10 +215,25 @@ W504
 
 [flake8 guide]: https://flake8.pycqa.org/en/3.1.1/user/ignoring-errors.html
 
+### API design
+
+Scverse ecosystem packages should operate on [AnnData][] and/or [MuData][] data structures and typically use an API
+as originally [introduced by scanpy][scanpy-api] with the following submodules:
+
+-   `pp` for preprocessing
+-   `tl` for tools (that, compared to `pp` generate interpretable output, often associated with a corresponding plotting
+    function)
+-   `pl` for plotting functions
+
+You may add additional submodules as appropriate. While we encourage to follow a scanpy-like API for ecosystem packages,
+there may also be good reasons to choose a different approach, e.g. using an object-oriented API.
+
+[scanpy-api]: https://scanpy.readthedocs.io/en/stable/usage-principles.html
+
 ### Using VCS-based versioning
 
 By default, the template uses hard-coded version numbers that are set in `pyproject.toml` and [managed with
-bump2version](#making-a-release). If you prefer to have your project automatically infer version numbers from git
+bump2version](contributing.md#publishing-a-release). If you prefer to have your project automatically infer version numbers from git
 tags, it is straightforward to switch to vcs-based versioning using [hatch-vcs][].
 
 In `pyproject.toml` add the following changes, and you are good to go!
@@ -174,75 +262,9 @@ In `pyproject.toml` add the following changes, and you are good to go!
  omit = [
 ```
 
-Don't forget to update the [Making a release section](#making-a-release) in this document accordingly, after you are done!
+Don't forget to update the [Making a release section](contributing.md#publishing-a-release) in this document accordingly, after you are done!
 
 [hatch-vcs]: https://pypi.org/project/hatch-vcs/
-
-## Contributing guide
-
-Scanpy provides extensive [developer documentation][scanpy developer guide], most of which applies to this repo, too.
-This document will not reproduce the entire content from there. Instead, it aims at summarizing the most important
-information to get you started on contributing.
-
-We assume that you are already familiar with git and with making pull requests on GitHub. If not, please refer
-to the [scanpy developer guide][].
-
-### Installing dev dependencies
-
-In addition to the packages needed to _use_ this package, you need additional python packages to _run tests_ and _build
-the documentation_. It's easy to install them using `pip`:
-
-```bash
-cd cellcharter
-pip install -e ".[dev,test,doc]"
-```
-
-### Code-style
-
-This template uses [pre-commit][] to enforce consistent code-styles. On every commit, pre-commit checks will either
-automatically fix issues with the code, or raise an error message. See [pre-commit checks](#pre-commit-checks) for
-a full list of checks enabled for this repository.
-
-To enable pre-commit locally, simply run
-
-```bash
-pre-commit install
-```
-
-in the root of the repository. Pre-commit will automatically download all dependencies when it is run for the first time.
-
-Alternatively, you can rely on the [pre-commit.ci][] service enabled on GitHub. If you didn't run `pre-commit` before
-pushing changes to GitHub it will automatically commit fixes to your pull request, or show an error message.
-
-If pre-commit.ci added a commit on a branch you still have been working on locally, simply use
-
-```bash
-git pull --rebase
-```
-
-to integrate the changes into yours.
-
-Finally, most editors have an _autoformat on save_ feature. Consider enabling this option for [black][black-editors]
-and [prettier][prettier-editors].
-
-[black-editors]: https://black.readthedocs.io/en/stable/integrations/editors.html
-[prettier-editors]: https://prettier.io/docs/en/editors.html
-
-### Writing tests
-
-This package uses the [pytest][] for automated testing. Please [write tests][scanpy-test-docs] for every function added
-to the package.
-
-Most IDEs integrate with pytest and provide a GUI to run tests. Alternatively, you can run all tests from the
-command line by executing
-
-```bash
-pytest
-```
-
-in the root of the repository. Continuous integration will automatically run the tests on all pull requests.
-
-[scanpy-test-docs]: https://scanpy.readthedocs.io/en/latest/dev/testing.html#writing-tests
 
 ### Automated template sync
 
@@ -270,91 +292,20 @@ The following hints may be useful to work with the template sync:
 [cruft]: https://cruft.github.io/cruft/
 [cruft-update-project]: https://cruft.github.io/cruft/#updating-a-project
 
-### Making a release
+## Moving forward
 
-#### Updating the version number
-
-Before making a release, you need to update the version number. Please adhere to [Semantic Versioning][semver], in brief
-
-> Given a version number MAJOR.MINOR.PATCH, increment the:
->
-> 1.  MAJOR version when you make incompatible API changes,
-> 2.  MINOR version when you add functionality in a backwards compatible manner, and
-> 3.  PATCH version when you make backwards compatible bug fixes.
->
-> Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format.
-
-We use [bump2version][] to automatically update the version number in all places and automatically create a git tag.
-Run one of the following commands in the root of the repository
-
-```bash
-bump2version patch
-bump2version minor
-bump2version major
-```
-
-Once you are done, run
-
-```
-git push --tags
-```
-
-to publish the created tag on GitHub.
-
-[bump2version]: https://github.com/c4urself/bump2version
-
-#### Upload on PyPI
-
-Please follow the [Python packaging tutorial][].
-
-It is possible to automate this with GitHub actions, see also [this feature request][pypi-feature-request]
-in the cookiecutter-scverse template.
-
-[python packaging tutorial]: https://packaging.python.org/en/latest/tutorials/packaging-projects/#generating-distribution-archives
-[pypi-feature-request]: https://github.com/scverse/cookiecutter-scverse/issues/88
-
-### Writing documentation
-
-Please write documentation for your package. This project uses [sphinx][] with the following features:
-
--   the [myst][] extension allows to write documentation in markdown/Markedly Structured Text
--   [Numpy-style docstrings][numpydoc] (through the [napoloen][numpydoc-napoleon] extension).
--   Jupyter notebooks as tutorials through [myst-nb][] (See [Tutorials with myst-nb](#tutorials-with-myst-nb-and-jupyter-notebooks))
--   [Sphinx autodoc typehints][], to automatically reference annotated input and output types
-
-See the [scanpy developer docs](https://scanpy.readthedocs.io/en/latest/dev/documentation.html) for more information
-on how to write documentation.
-
-### Tutorials with myst-nb and jupyter notebooks
-
-The documentation is set-up to render jupyter notebooks stored in the `docs/notebooks` directory using [myst-nb][].
-Currently, only notebooks in `.ipynb` format are supported that will be included with both their input and output cells.
-It is your reponsibility to update and re-run the notebook whenever necessary.
-
-If you are interested in automatically running notebooks as part of the continuous integration, please check
-out [this feature request](https://github.com/scverse/cookiecutter-scverse/issues/40) in the `cookiecutter-scverse`
-repository.
-
-#### Hints
-
--   If you refer to objects from other packages, please add an entry to `intersphinx_mapping` in `docs/conf.py`. Only
-    if you do so can sphinx automatically create a link to the external documentation.
--   If building the documentation fails because of a missing link that is outside your control, you can add an entry to
-    the `nitpick_ignore` list in `docs/conf.py`
-
-#### Building the docs locally
-
-```bash
-cd docs
-make html
-open _build/html/index.html
-```
+You have reached the end of this document. Congratulations! You have successfully set up your project and are ready to start.
+For everything else related to documentation, code style, testing and publishing your project ot pypi, please refer to the [contributing docs](contributing.md#contributing-guide).
 
 <!-- Links -->
 
 [scanpy developer guide]: https://scanpy.readthedocs.io/en/latest/dev/index.html
+[cookiecutter-scverse-instance]: https://cookiecutter-scverse-instance.readthedocs.io/en/latest/template_usage.html
+[github quickstart guide]: https://docs.github.com/en/get-started/quickstart/create-a-repo?tool=webui
 [codecov]: https://about.codecov.io/sign-up/
 [codecov docs]: https://docs.codecov.com/docs
+[codecov bot]: https://docs.codecov.com/docs/team-bot
+[codecov app]: https://github.com/apps/codecov
 [pre-commit.ci]: https://pre-commit.ci/
 [readthedocs.org]: https://readthedocs.org/
 [myst-nb]: https://myst-nb.readthedocs.io/en/latest/
