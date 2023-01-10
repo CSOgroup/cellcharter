@@ -1,0 +1,10 @@
+diff a/README.md b/README.md	(rejected hunks)
+@@ -3,7 +3,7 @@
+ [![Tests][badge-tests]][link-tests]
+ [![Documentation][badge-docs]][link-docs]
+ 
+-[badge-tests]: https://img.shields.io/github/workflow/status/marcovarrone/cellcharter/Test/main
++[badge-tests]: https://img.shields.io/github/actions/workflow/status/marcovarrone/cellcharter/test.yaml?branch=main
+ [link-tests]: https://github.com/marcovarrone/cellcharter/actions/workflows/test.yml
+ [badge-docs]: https://img.shields.io/readthedocs/cellcharter
+ 
