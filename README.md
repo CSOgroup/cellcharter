@@ -6,9 +6,9 @@
 ---
 
 <p align="center">
-  <a href="https://cellcharter.readthedocs.io/en/latest/">Documentation</a> •
-  <a href="https://cellcharter.readthedocs.io/en/latest/notebooks/codex_mouse_spleen.html">Examples</a> •
-  <a href="https://www.biorxiv.org/content/10.1101/2023.01.10.523386v1">Paper</a>
+  <a href="https://cellcharter.readthedocs.io/en/latest/" target="_blank">Documentation</a> •
+  <a href="https://cellcharter.readthedocs.io/en/latest/notebooks/codex_mouse_spleen.html" target="_blank">Examples</a> •
+  <a href="https://www.biorxiv.org/content/10.1101/2023.01.10.523386v1" target="_blank">Paper</a>
 </p>
 
 [![Tests][badge-tests]][link-tests]
