@@ -5,7 +5,7 @@ requires = ["hatchling"]
 
 [project]
 name = "cellcharter"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
 requires-python = ">=3.8,<3.11"
@@ -25,9 +25,7 @@ dependencies = [
     "squidpy",
     # for debug logging (referenced from the issue template)
     "session-info",
-    "scvi-tools",
     "pycave",
-    "scarches"
 ]
 
 [project.optional-dependencies]
@@ -50,6 +48,12 @@ doc = [
 test = [
     "pytest",
     "pytest-cov",
+]
+transcriptomics = [
+    "scvi-tools",
+]
+proteomics = [
+    "scarches",
 ]
 
 [tool.coverage.run]

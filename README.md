@@ -45,17 +45,28 @@ Please refer to the [documentation][link-docs]. In particular, the
 
 ## Installation
 
-CellCharter uses [PyTorch](https://pytorch.org). If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
+CellCharter uses [PyTorch](https://pytorch.org) <= 1.12.1. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
 
-Then you are ready to install CellCharter.
+In CellCharter, only the dimensionality reduction and batch correction step is dependent on the data type. In particular, it uses:
+
+-   [scVI](https://github.com/scverse/scvi-tools) for spatial transcriptomics data such as 10x Visium and Xenium, Nanostring CosMx, Vizgen MERSCOPE, Stereo-seq, DBiT-seq, MERFISH and seqFISH data.
+-   A modified version of [scArches](https://github.com/theislab/scarches)'s TRVAE model for spatial proteomics data such as Akoya CODEX, Lunaphore COMET, CyCIF, IMC and MIBI-TOF data.
+
+By installing CellCharter without specifying the type of data, as in the following code, it will install without any of the two models.
 
 ```bash
 pip install cellcharter
 ```
 
+However, you can include in the installation the type of data (transcriptomics and/or proteomics) you are planning to analyze, and it will install the required dependencies.
+
+```bash
+pip install cellcharter[transcriptomics]
+```
+
 ## Contribution
 
-If you found a bug or you wnat to propose a new feature, please use the [issue tracker][issue-tracker].
+If you found a bug or you want to propose a new feature, please use the [issue tracker][issue-tracker].
 
 [issue-tracker]: https://github.com/CSOgroup/cellcharter/issues
 [link-docs]: https://cellcharter.readthedocs.io
