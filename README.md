@@ -45,7 +45,7 @@ Please refer to the [documentation][link-docs]. In particular, the
 
 ## Installation
 
-CellCharter uses [PyTorch](https://pytorch.org) <= 1.12.1. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
+CellCharter uses Python < 3.11 and [PyTorch](https://pytorch.org) <= 1.12.1. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
 
 In CellCharter, only the dimensionality reduction and batch correction step is dependent on the data type. In particular, it uses:
 
