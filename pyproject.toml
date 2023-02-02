@@ -32,7 +32,8 @@ dependencies = [
 dev = [
     # CLI for bumping the version number
     "bump2version",
-    "pre-commit"
+    "pre-commit",
+    "twine>=4.0.2"
 ]
 doc = [
     "sphinx>=4",
