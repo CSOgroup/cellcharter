@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/scverse/cookiecutter-scverse",
-  "commit": "7cc5403b05e299d7a4bb169c2bd8c27a2a7676f3",
-  "checkout": "v0.1.3",
+  "commit": "c21b82bf134f3a0f13db7482d4fb04ca1f562d59",
+  "checkout": "main",
   "context": {
     "cookiecutter": {
       "project_name": "cellcharter",
