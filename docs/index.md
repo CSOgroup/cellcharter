@@ -18,5 +18,7 @@ plotting.md
 :caption: Tutorials
 
 notebooks/codex_mouse_spleen
+notebooks/cosmx_human_nsclc
+
 
 ```
