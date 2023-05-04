@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from lightkit.utils.path import PathType
 from pycave import set_logging_level
-from sklearn.metrics import fowlkes_mallows_score
+from sklearn.metrics import adjusted_rand_score
 from tqdm.auto import tqdm
 
 import cellcharter as cc
@@ -76,7 +76,7 @@ class ClusterAutoK:
         self.max_runs = max_runs
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
         self.model_params = model_params if model_params else {}
-        self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
+        self.similarity_function = similarity_function if similarity_function else adjusted_rand_score
 
     def fit(self, adata: ad.AnnData, use_rep: str = None):
         """

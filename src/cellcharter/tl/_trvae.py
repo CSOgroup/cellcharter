@@ -4,6 +4,7 @@ import os
 from typing import Optional
 
 from anndata import AnnData, read
+from torch import nn
 
 try:
     from scarches.models import TRVAE as scaTRVAE
@@ -132,11 +133,11 @@ else:
                 self.use_ln_,
             )
 
-            # decoder_layer_sizes = self.model.hidden_layer_sizes.copy()
-            # decoder_layer_sizes.reverse()
-            # decoder_layer_sizes.append(self.model.input_dim)
+            decoder_layer_sizes = self.model.hidden_layer_sizes.copy()
+            decoder_layer_sizes.reverse()
+            decoder_layer_sizes.append(self.model.input_dim)
 
-            # self.model.decoder.recon_decoder = nn.Linear(decoder_layer_sizes[-2], decoder_layer_sizes[-1])
+            self.model.decoder.recon_decoder = nn.Linear(decoder_layer_sizes[-2], decoder_layer_sizes[-1])
 
             self.is_trained_ = False
 
