@@ -7,9 +7,9 @@ import cellcharter as cc
 
 
 class TestClusterAutoK:
-    @pytest.mark.parametrize("func", ["mibitof"])
-    def test_spatial_proteomics(self, func: str):
-        download_dataset = getattr(sq.datasets, func)
+    @pytest.mark.parametrize("dataset_name", ["mibitof"])
+    def test_spatial_proteomics(self, dataset_name: str):
+        download_dataset = getattr(sq.datasets, dataset_name)
         adata = download_dataset()
         if sps.issparse(adata.X):
             adata.X = adata.X.todense()
@@ -22,11 +22,10 @@ class TestClusterAutoK:
             "random_state": 42,
             "trainer_params": {"accelerator": "cpu", "enable_progress_bar": False},
         }
-        cls = cc.tl.ClusterAutoK(
-            n_clusters=(2, 4), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=3
+        autok = cc.tl.ClusterAutoK(
+            n_clusters=(2, 5), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=3
         )
-        cls.fit(adata, use_rep="X_cellcharter")
+        autok.fit(adata, use_rep="X_cellcharter")
+        adata.obs[f"cellcharter_{autok.best_k}"] = autok.predict(adata, use_rep="X_cellcharter", k=autok.best_k)
 
-        adata.obs[f"cellcharter_{cls.best_k}"] = cls.predict(adata, use_rep="X_cellcharter", k=cls.best_k)
-
-        assert len(np.unique(adata.obs[f"cellcharter_{cls.best_k}"])) == cls.best_k
+        assert len(np.unique(adata.obs[f"cellcharter_{autok.best_k}"])) == autok.best_k

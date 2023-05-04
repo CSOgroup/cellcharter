@@ -15,10 +15,11 @@ import numpy as np
 import pandas as pd
 from lightkit.utils.path import PathType
 from pycave import set_logging_level
+from sklearn.metrics import fowlkes_mallows_score
 from tqdm.auto import tqdm
 
 import cellcharter as cc
-from cellcharter.tl._utils import _stability_onesided, _stability_twosided
+from cellcharter.tl._utils import _stability
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +66,17 @@ class ClusterAutoK:
         max_runs: int = 10,
         model_class: type = None,
         model_params: dict = None,
+        similarity_function: callable = None,
     ):
         self.n_clusters = (
-            list(range(*(n_clusters[0] - 1, n_clusters[1] + 2))) if isinstance(n_clusters, tuple) else n_clusters
+            list(range(*(max(1, n_clusters[0] - 1), n_clusters[1] + 2)))
+            if isinstance(n_clusters, tuple)
+            else n_clusters
         )
         self.max_runs = max_runs
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
         self.model_params = model_params if model_params else {}
+        self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
 
     def fit(self, adata: ad.AnnData, use_rep: str = None):
         """
@@ -92,7 +97,6 @@ class ClusterAutoK:
 
         self.labels = defaultdict(list)
         self.best_models = {}
-        stability_onesided = defaultdict(list)
 
         random_state = self.model_params.pop("random_state", 0)
 
@@ -108,16 +112,16 @@ class ClusterAutoK:
                 if (k not in self.best_models.keys()) or (clustering.nll_ < self.best_models[k].nll_):
                     self.best_models[k] = clustering
 
-            self.labels, stability_onesided = _stability_onesided(self.labels, stability_onesided, new_labels)
+            for k, new_l in new_labels.items():
+                self.labels[k].append(new_l)
 
-        self.stability = _stability_twosided(stability_onesided)
-
+        self.stability = _stability(self.labels, self.max_runs, similarity_function=self.similarity_function)
         set_logging_level(logging_level)
 
     @property
     def best_k(self) -> int:
         """The number of clusters with the highest stability."""
-        stability_mean = np.array([np.mean(self.stability[k]) for k in self.n_clusters[1:-1]])
+        stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
 

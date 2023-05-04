@@ -8,7 +8,6 @@ import scipy.sparse as sps
 from anndata import AnnData
 from scipy.sparse import spdiags
 from squidpy._constants._pkg_constants import Key as sqKey
-from squidpy._docs import d
 from tqdm.auto import tqdm
 
 from cellcharter._constants._pkg_constants import Key
@@ -103,7 +102,6 @@ def _aggregate_neighbors(
         return np.hstack(Xs)
 
 
-@d.dedent
 def aggregate_neighbors(
     adata: AnnData,
     n_layers: Union[int, list],
