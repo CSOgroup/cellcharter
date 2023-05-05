@@ -169,7 +169,9 @@ class GaussianMixture(PyCaveGaussianMixture):
             batch_size=self.batch_size or len(data),
             collate_fn=collate_tensor,
         )
-        result = Trainer(logger=False).predict(GaussianMixtureLightningModule(self.model_), loader)
+        trainer_params = self.trainer_params.copy()
+        trainer_params["logger"] = False
+        result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
         return torch.cat([x[0] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
 
     def score_samples(self, data: TensorLike) -> torch.Tensor:
@@ -194,7 +196,9 @@ class GaussianMixture(PyCaveGaussianMixture):
             batch_size=self.batch_size or len(data),
             collate_fn=collate_tensor,
         )
-        result = Trainer(logger=False).predict(GaussianMixtureLightningModule(self.model_), loader)
+        trainer_params = self.trainer_params.copy()
+        trainer_params["logger"] = False
+        result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
         return torch.stack([x[1] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
 
 

@@ -5,11 +5,10 @@ from anndata import AnnData
 from scipy.sparse import csr_matrix
 from squidpy._constants._constants import CoordType, Transform
 from squidpy._constants._pkg_constants import Key
-from squidpy._docs import d, inject_docs
+from squidpy._docs import inject_docs
 from squidpy.gr._utils import _assert_connectivity_key
 
 
-@d.dedent
 @inject_docs(t=Transform, c=CoordType)
 def remove_long_links(
     adata: AnnData,

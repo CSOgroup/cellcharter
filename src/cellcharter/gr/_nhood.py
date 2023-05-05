@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
-from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs, _assert_connectivity_key
 
 import cellcharter as cc
@@ -50,7 +49,6 @@ def _expected_n_clusters_links(
     return exp
 
 
-@d.dedent
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,

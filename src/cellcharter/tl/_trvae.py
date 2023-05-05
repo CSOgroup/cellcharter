@@ -87,7 +87,7 @@ else:
             use_mmd: bool = True,
             mmd_on: str = "z",
             mmd_boundary: Optional[int] = None,
-            recon_loss: Optional[str] = "nb",
+            recon_loss: Optional[str] = "mse",
             beta: float = 1,
             use_bn: bool = False,
             use_ln: bool = True,
