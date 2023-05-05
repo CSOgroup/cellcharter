@@ -8,7 +8,7 @@ diff a/.pre-commit-config.yaml b/.pre-commit-config.yaml	(rejected hunks)
        hooks:
            - id: black
 -    - repo: https://github.com/pre-commit/mirrors-prettier
--      rev: v3.0.0-alpha.9-for-vscode
+-      rev: v3.0.0-alpha.6
 -      hooks:
 -          - id: prettier
      - repo: https://github.com/asottile/blacken-docs
@@ -22,7 +22,7 @@ diff a/.pre-commit-config.yaml b/.pre-commit-config.yaml	(rejected hunks)
 -    - repo: https://github.com/asottile/yesqa
 -      rev: v1.4.0
 +    - repo: https://github.com/pre-commit/mirrors-prettier
-+      rev: v3.0.0-alpha.9-for-vscode
++      rev: v3.0.0-alpha.6
        hooks:
 -          - id: yesqa
 -            additional_dependencies:
@@ -40,7 +40,7 @@ diff a/.pre-commit-config.yaml b/.pre-commit-config.yaml	(rejected hunks)
 +            # https://github.com/jupyterlab/jupyterlab/issues/12675
 +            language_version: "17.9.1"
 +    - repo: https://github.com/charliermarsh/ruff-pre-commit
-+      rev: v0.0.263
++      rev: v0.0.261
 +      hooks:
 +          - id: ruff
 +            args: [--fix, --exit-non-zero-on-fix]
@@ -52,7 +52,7 @@ diff a/.pre-commit-config.yaml b/.pre-commit-config.yaml	(rejected hunks)
            - id: trailing-whitespace
            - id: check-case-conflict
 -    - repo: https://github.com/myint/autoflake
--      rev: v2.1.1
+-      rev: v2.0.2
 -      hooks:
 -          - id: autoflake
 -            args:
@@ -72,7 +72,7 @@ diff a/.pre-commit-config.yaml b/.pre-commit-config.yaml	(rejected hunks)
 -                - flake8-bugbear
 -                - flake8-blind-except
 -    - repo: https://github.com/asottile/pyupgrade
--      rev: v3.3.2
+-      rev: v3.3.1
 -      hooks:
 -          - id: pyupgrade
 -            args: [--py3-plus, --py38-plus, --keep-runtime-typing]
