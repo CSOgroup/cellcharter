@@ -43,4 +43,4 @@ jobs:
                       manually merge these changes.**
 
                       For more information about the template sync, please refer to the
-                      [template documentation](https://cookiecutter-scverse-instance.readthedocs.io/en/latest/developer_docs.html#automated-template-sync).
+                      [template documentation](https://cookiecutter-scverse-instance.readthedocs.io/en/latest/template_usage.html#automated-template-sync).
