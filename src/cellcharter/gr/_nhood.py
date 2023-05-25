@@ -12,8 +12,9 @@ import cellcharter as cc
 def _observed_n_clusters_links(adata, clusters, cluster_key, connectivity_key=Key.obsp.spatial_conn(), symmetric=True):
     obs = np.zeros((len(clusters), len(clusters)))
     for i, c1 in enumerate(clusters):
+        total_cluster_links = adata.obsp[connectivity_key][adata.obs[cluster_key] == c1]
+
         for j, c2 in enumerate(clusters):
-            total_cluster_links = adata.obsp[connectivity_key][adata.obs[cluster_key] == c1]
             other_cluster_links = total_cluster_links[:, adata.obs[cluster_key] == c2]
 
             if not symmetric:
