@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from anndata import AnnData
-from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _get_palette, _maybe_set_colors
+
+try:
+    from matplotlib import colormaps as cm
+except ImportError:
+    from matplotlib import cm
+
+
+from cellcharter.pl._utils import _dotplot
 
 
 def _proportion(adata, id_key, val_key, normalize=True):
@@ -16,11 +25,9 @@ def _proportion(adata, id_key, val_key, normalize=True):
     if normalize:
         return df.div(df.sum(axis=1), axis=0)
     else:
-
         return df
 
 
-@d.dedent
 def proportion(
     adata: AnnData,
     x_key: str,
@@ -32,6 +39,7 @@ def proportion(
     figsize: tuple[float, float] | None = None,
     dpi: int | None = None,
     save: str | Path | None = None,
+    return_df: bool = False,
     **kwargs,
 ) -> None:
     """
@@ -79,3 +87,103 @@ def proportion(
 
     if save:
         plt.savefig(save, bbox_extra_artists=(lgd, lgd), bbox_inches="tight")
+    if return_df:
+        return df
+
+
+def _enrichment(observed, expected, log=True):
+    enrichment = observed.div(expected, axis="index", level=0)
+    if log:
+        enrichment = np.log2(enrichment)
+    enrichment = enrichment.fillna(enrichment.min())
+    return enrichment
+
+
+def enrichment(
+    adata: AnnData,
+    x_key: str,
+    y_key: str,
+    log: bool = True,
+    size_threshold: float = None,
+    color_threshold: float = 1,
+    size_title: str = "log2 FC",
+    dot_scale: float = 1,
+    order_x=True,
+    x_filter=None,
+    y_filter=None,
+    palette: Palette_t = None,
+    figsize: tuple[float, float] | None = None,
+    save: str | Path | None = None,
+    return_df: bool = False,
+    **kwargs,
+):
+    """
+    Plot the enrichment of `y_key` in `x_key`.
+
+    This functions is based on a modified version of :func:`scanpy.pl.dotplot`.
+
+    Parameters
+    ----------
+    %(adata)s
+    x_key
+        Key in :attr:`anndata.AnnData.obs` where groups are stored.
+    y_key
+        Key in :attr:`anndata.AnnData.obs` where labels are stored.
+    log
+        If `True` use log2 fold change, otherwise use fold change.
+    size_threshold
+        Threshold for the size of the dots.
+    color_threshold
+        Threshold to mark enrichments as significant.
+    size_title
+        Title for the size legend.
+    dot_scale
+        Scale of the dots.
+    order_x
+        Order the x axis hierchically based on similiraty of enriched values.
+    x_filter
+        The groups for which to show the enrichment.
+    y_filter
+        The labels for which to show the enrichment.
+    palette
+        Colormap for the enrichment values.
+    %(plotting)s
+    """
+    if palette is None:
+        palette = matplotlib.colors.LinearSegmentedColormap.from_list(
+            "", [cm.get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), cm.get_cmap("coolwarm")(255)]
+        )
+
+    observed = _proportion(adata, id_key=y_key, val_key=x_key).reindex().T
+    expected = adata.obs[x_key].value_counts() / adata.shape[0]
+
+    enrichment = _enrichment(observed, expected, log=log)
+
+    if y_filter:
+        enrichment = enrichment.loc[:, y_filter]
+
+    if x_filter:
+        enrichment = enrichment.loc[x_filter]
+
+    dp = _dotplot(
+        adata if y_filter is None else adata[adata.obs[y_key].isin(y_filter)],
+        x_key=x_key,
+        y_key=y_key,
+        values=enrichment,
+        abs_values=False,
+        size_threshold=(-1, size_threshold),
+        color_threshold=(0, color_threshold),
+        figsize=figsize,
+        cmap=palette,
+        size_title=size_title,
+        dot_scale=dot_scale,
+        order_id=order_x,
+        **kwargs,
+    )
+    if save:
+        dp.savefig(save, bbox_inches="tight")
+    else:
+        dp.show()
+
+    if return_df:
+        return enrichment
