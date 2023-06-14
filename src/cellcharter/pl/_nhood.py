@@ -45,7 +45,7 @@ def nhood_enrichment(
     %(cluster_key)s
 
     fold_change
-        If `True`, the enrichment is computed as ratio between observed and expected values. Otherwise, it is computed as the difference.
+        If `True`, the enrichment is computed as log ratio between observed and expected values. Otherwise, it is computed as the difference.
 
     %(heatmap_plotting)s
 
@@ -65,8 +65,9 @@ def nhood_enrichment(
     enrichment = (
         nhood_enrichment_values["observed"] - nhood_enrichment_values["expected"]
         if not fold_change
-        else nhood_enrichment_values["observed"] / nhood_enrichment_values["expected"]
+        else np.log(nhood_enrichment_values["observed"] / nhood_enrichment_values["expected"])
     )
+    enrichment[np.isinf(enrichment)] = np.nan
     adata_enrichment = AnnData(X=enrichment.astype(np.float32))
     adata_enrichment.obs[cluster_key] = pd.Categorical(enrichment.index)
 
