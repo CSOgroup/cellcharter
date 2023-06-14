@@ -165,6 +165,8 @@ def enrichment(
     if x_filter:
         enrichment = enrichment.loc[x_filter]
 
+    size_threshold = np.max(enrichment.values) if size_threshold is None else size_threshold
+
     dp = _dotplot(
         adata if y_filter is None else adata[adata.obs[y_key].isin(y_filter)],
         x_key=x_key,

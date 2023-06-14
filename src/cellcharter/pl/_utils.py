@@ -204,13 +204,13 @@ def _dotplot(
     )
     dp.max_value = np.max(values_size.values)
     dp.color_threshold = color_threshold[1]
+    dp.size_threshold = size_threshold[1]
 
     dp.swap_axes()
     dp = dp.style(
         cmap=cmap,
         largest_dot=dp.largest_dot * dot_scale,
         dot_edge_lw=DotPlot.DEFAULT_DOT_EDGELW,
-        dot_max=size_threshold[1] if size_threshold[1] is not None else np.max(values_size.values),
     )
     dp = dp.legend(show_colorbar=False, size_title=size_title)
     return dp
@@ -220,24 +220,18 @@ class MyDotPlot(DotPlot):
     """Modified version :class:`scanpy.pl.DotPlot`."""
 
     def _plot_size_legend(self, size_legend_ax: Axes):
-        size_range = np.linspace(self.dot_min, self.dot_max, 3)
-        if self.dot_min != 0 or self.dot_max != 1:
-            dot_range = self.dot_max - self.dot_min
-            size_values = (size_range - self.dot_min) / dot_range
-        else:
-            size_values = size_range
+        size_range = np.linspace(self.dot_min, self.size_threshold, 3)
+        if self.dot_min == 0:
+            size_range[0] += self.size_threshold / 10
 
-        size = size_values**self.size_exponent
+        size = (size_range / (self.size_threshold - self.dot_min)) ** self.size_exponent
         size = size * (self.largest_dot - self.smallest_dot) + self.smallest_dot
-
         # plot size bar
         size_legend_ax.scatter(
             np.arange(len(size)) + 0.5,
             np.repeat(0, len(size)),
             s=size,
-            c=[
-                "gray" if s < self.color_threshold else (0.705673158, 0.01555616, 0.150232812, 1.0) for s in size_values
-            ],
+            c=["gray" if s < self.color_threshold else (0.705673158, 0.01555616, 0.150232812, 1.0) for s in size_range],
             edgecolor="black",
             linewidth=self.dot_edge_lw,
             zorder=100,
