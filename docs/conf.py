@@ -65,7 +65,7 @@ napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_use_rtype = True  # having a separate entry generally helps readability
 napoleon_use_param = True
-myst_heading_anchors = 3  # create anchors for h1-h3
+myst_heading_anchors = 6  # create anchors for h1-h6
 myst_enable_extensions = [
     "amsmath",
     "colon_fence",
@@ -87,6 +87,7 @@ source_suffix = {
 }
 
 intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
     "anndata": ("https://anndata.readthedocs.io/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
 }
@@ -109,6 +110,7 @@ html_title = project_name
 html_theme_options = {
     "repository_url": repository_url,
     "use_repository_button": True,
+    "path_to_docs": "docs/",
 }
 
 pygments_style = "default"
