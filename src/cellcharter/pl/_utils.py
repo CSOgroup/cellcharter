@@ -165,7 +165,7 @@ def _dotplot(
     cmap="bwr",
     size_title="log2 FC",
     dot_scale=1,
-    order_id=True,
+    cluster_x=True,
     **kwargs,
 ):
     values_color = _clip(
@@ -174,7 +174,7 @@ def _dotplot(
     values_color[(values < 0) & (values > color_threshold[0])] = 0  # -0.3
     values_color[(values > 0) & (values < color_threshold[1])] = 0  # 0.3
 
-    if order_id is True:
+    if cluster_x is True:
         order = sp.cluster.hierarchy.dendrogram(
             sp.cluster.hierarchy.linkage(values_color.T, method="complete"), no_plot=True
         )["leaves"]

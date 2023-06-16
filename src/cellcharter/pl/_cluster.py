@@ -15,7 +15,6 @@ try:
 except ImportError:
     from matplotlib import cm
 
-
 from cellcharter.pl._utils import _dotplot
 
 
@@ -93,6 +92,7 @@ def proportion(
 
 def _enrichment(observed, expected, log=True):
     enrichment = observed.div(expected, axis="index", level=0)
+
     if log:
         enrichment = np.log2(enrichment)
     enrichment = enrichment.fillna(enrichment.min())
@@ -101,91 +101,83 @@ def _enrichment(observed, expected, log=True):
 
 def enrichment(
     adata: AnnData,
-    x_key: str,
-    y_key: str,
-    log: bool = True,
-    size_threshold: float = None,
+    group_key: str,
+    label_key: str,
+    size_threshold: float | None = None,
     color_threshold: float = 1,
-    size_title: str = "log2 FC",
+    legend_title: str | None = None,
     dot_scale: float = 1,
-    order_x=True,
-    x_filter=None,
-    y_filter=None,
-    palette: Palette_t = None,
+    cluster_groups: bool = True,
+    groups: list | None = None,
+    labels: list | None = None,
+    palette: Palette_t | None = None,
     figsize: tuple[float, float] | None = None,
     save: str | Path | None = None,
-    return_df: bool = False,
     **kwargs,
 ):
     """
-    Plot the enrichment of `y_key` in `x_key`.
+    Plot a dotplot of the enrichment of `y_key` in `x_key`.
 
     This functions is based on a modified version of :func:`scanpy.pl.dotplot`.
 
     Parameters
     ----------
     %(adata)s
-    x_key
+    group_key
         Key in :attr:`anndata.AnnData.obs` where groups are stored.
-    y_key
+    label_key
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
-    log
-        If `True` use log2 fold change, otherwise use fold change.
     size_threshold
-        Threshold for the size of the dots.
+        Threshold for the size of the dots. Enrichments with value above this threshold will have all the same size.
     color_threshold
         Threshold to mark enrichments as significant.
-    size_title
+    legend_title
         Title for the size legend.
     dot_scale
         Scale of the dots.
-    order_x
-        Order the x axis hierchically based on similiraty of enriched values.
-    x_filter
+    cluster_groups
+        If `True`, display groups ordered according to hierarchical clustering.
+    groups
         The groups for which to show the enrichment.
-    y_filter
+    labels
         The labels for which to show the enrichment.
     palette
         Colormap for the enrichment values.
     %(plotting)s
+    kwargs
+        Keyword arguments for :func:`matplotlib.pyplot.scatter`.
     """
     if palette is None:
         palette = matplotlib.colors.LinearSegmentedColormap.from_list(
             "", [cm.get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), cm.get_cmap("coolwarm")(255)]
         )
 
-    observed = _proportion(adata, id_key=y_key, val_key=x_key).reindex().T
-    expected = adata.obs[x_key].value_counts() / adata.shape[0]
+    enrichment = adata.uns[f"{group_key}_{label_key}_enrichment"]["enrichment"]
 
-    enrichment = _enrichment(observed, expected, log=log)
+    if labels is not None:
+        enrichment = enrichment.loc[:, labels]
 
-    if y_filter:
-        enrichment = enrichment.loc[:, y_filter]
-
-    if x_filter:
-        enrichment = enrichment.loc[x_filter]
+    if groups is not None:
+        enrichment = enrichment.loc[groups]
 
     size_threshold = np.max(enrichment.values) if size_threshold is None else size_threshold
 
     dp = _dotplot(
-        adata if y_filter is None else adata[adata.obs[y_key].isin(y_filter)],
-        x_key=x_key,
-        y_key=y_key,
+        adata if labels is None else adata[adata.obs[label_key].isin(labels)],
+        x_key=group_key,
+        y_key=label_key,
         values=enrichment,
         abs_values=False,
         size_threshold=(-1, size_threshold),
         color_threshold=(0, color_threshold),
         figsize=figsize,
         cmap=palette,
-        size_title=size_title,
+        size_title=legend_title,
         dot_scale=dot_scale,
-        order_id=order_x,
+        cluster_x=cluster_groups,
         **kwargs,
     )
     if save:
         dp.savefig(save, bbox_inches="tight")
     else:
         dp.show()
-
-    if return_df:
-        return enrichment
