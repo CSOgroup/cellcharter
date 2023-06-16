@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -19,10 +20,9 @@ from cellcharter.pl._utils import _heatmap
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
-    fold_change: bool = False,
     annotate: bool = False,
     method: str | None = None,
-    title: str | None = None,
+    title: str | None = "Neighborhood enrichment",
     cmap: str = "bwr",
     palette: Palette_t = None,
     cbar_kwargs: Mapping[str, Any] = MappingProxyType({}),
@@ -31,7 +31,7 @@ def nhood_enrichment(
     save: str | Path | None = None,
     ax: Axes | None = None,
     n_digits: int = 2,
-    return_enrichment: bool = False,
+    significance: float | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame | None:
     """
@@ -43,39 +43,39 @@ def nhood_enrichment(
     ----------
     %(adata)s
     %(cluster_key)s
-
-    fold_change
-        If `True`, the enrichment is computed as log ratio between observed and expected values. Otherwise, it is computed as the difference.
-
     %(heatmap_plotting)s
 
     n_digits
         The number of digits of the number in the annotations.
-    return_enrichment
-        Return a :class:`pd.DataFrame` with the computed enrichment.
+    significance
+        Mark the values that are below this threshold with a star. If `None`, no significance is computed. It requires ``gr.nhood_enrichment`` to be run with ``analytical=False``.
     kwargs
         Keyword arguments for :func:`matplotlib.pyplot.text`.
 
     Returns
     -------
-    If ``return_enrichment = True``, returns a :class:`pd.DataFrame` with the enrichment values between clusters.
+    %(plotting_returns)s
     """
     _assert_categorical_obs(adata, key=cluster_key)
     nhood_enrichment_values = _get_data(adata, cluster_key=cluster_key, func_name="nhood_enrichment")
-    enrichment = (
-        nhood_enrichment_values["observed"] - nhood_enrichment_values["expected"]
-        if not fold_change
-        else np.log(nhood_enrichment_values["observed"] / nhood_enrichment_values["expected"])
-    )
+    enrichment = nhood_enrichment_values["enrichment"]
     enrichment[np.isinf(enrichment)] = np.nan
     adata_enrichment = AnnData(X=enrichment.astype(np.float32))
     adata_enrichment.obs[cluster_key] = pd.Categorical(enrichment.index)
 
-    _maybe_set_colors(source=adata, target=adata_enrichment, key=cluster_key, palette=palette)
-    if title is None:
-        title = "Neighborhood enrichment"
+    if significance is not None:
+        if "pvalue" not in nhood_enrichment_values:
+            warnings.warn(
+                "Significance requires gr.nhood_enrichment to be run with analytical=False. Ignoring significance.",
+                UserWarning,
+            )
+        else:
+            adata_enrichment.layers["significant"] = np.empty_like(enrichment, dtype=str)
+            adata_enrichment.layers["significant"][nhood_enrichment_values["pvalue"] <= significance] = "*"
 
-    vcenter = kwargs.pop("vcenter", 1 if fold_change else 0)
+    _maybe_set_colors(source=adata, target=adata_enrichment, key=cluster_key, palette=palette)
+
+    vcenter = kwargs.pop("vcenter", 1 if nhood_enrichment_values["params"]["log_fold_change"] else 0)
 
     _heatmap(
         adata_enrichment,
@@ -95,6 +95,3 @@ def nhood_enrichment(
 
     if save is not None:
         plt.savefig(save, bbox_inches="tight")
-
-    if return_enrichment:
-        return enrichment

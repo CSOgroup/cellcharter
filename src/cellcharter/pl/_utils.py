@@ -70,14 +70,20 @@ def _heatmap(
     cont_cmap = copy(plt.get_cmap(cont_cmap))
     cont_cmap.set_bad(color="grey")
 
+    annot = np.round(data[::-1], n_digits).astype(str) if annotate else None
+    if "significant" in adata.layers:
+        significant = adata.layers["significant"].astype(str)
+        annot = np.char.add(np.empty_like(data[::-1], dtype=str), significant)
+
     ax = sns.heatmap(
         data[::-1],
         cmap=cont_cmap,
         norm=norm,
         ax=ax,
         square=True,
-        annot=np.round(data[::-1], n_digits) if annotate else False,
+        annot=annot,
         cbar=False,
+        fmt="",
         **kwargs,
     )
 

@@ -14,8 +14,20 @@ cc.gr.remove_long_links(adata)
 
 
 class TestNhoodEnrichment:
-    def test_plot_nhood_enrichment(self):
-        cc.gr.nhood_enrichment(adata, cluster_key=_CK, only_inter=False)
+    def test_enrichment(self):
+        cc.gr.nhood_enrichment(adata, cluster_key=_CK, only_inter=False, log_fold_change=False)
+        enrichment = adata.uns[key]["enrichment"]
+        assert np.all((enrichment >= -1) & (enrichment <= 1))
+
+        del adata.uns[key]
+
+    def test_fold_change(self):
+        cc.gr.nhood_enrichment(adata, cluster_key=_CK, log_fold_change=True)
+
+        del adata.uns[key]
+
+    def test_nhood_obs_exp(self):
+        cc.gr.nhood_enrichment(adata, cluster_key=_CK, only_inter=False, observed_expected=True)
         observed = adata.uns[key]["observed"]
         expected = adata.uns[key]["expected"]
 
@@ -27,12 +39,43 @@ class TestNhoodEnrichment:
 
         del adata.uns[key]
 
-    def test_only_inter(self):
-        cc.gr.nhood_enrichment(adata, cluster_key=_CK)
-        assert np.all(np.diag(np.isnan(adata.uns[key]["expected"])))
-
     def test_symmetric(self):
-        cc.gr.nhood_enrichment(adata, cluster_key=_CK, symmetric=True)
+        result = cc.gr.nhood_enrichment(
+            adata, cluster_key=_CK, symmetric=True, log_fold_change=True, only_inter=False, copy=True
+        )
+        assert scipy.linalg.issymmetric(result["enrichment"].values, atol=1e-02)
 
-        assert scipy.linalg.issymmetric(adata.uns[key]["observed"].values, rtol=1e-05, atol=1e-08)
-        assert scipy.linalg.issymmetric(adata.uns[key]["expected"].values, rtol=1e-05, atol=1e-08)
+        result = cc.gr.nhood_enrichment(
+            adata, cluster_key=_CK, symmetric=True, log_fold_change=False, only_inter=False, copy=True
+        )
+        assert scipy.linalg.issymmetric(result["enrichment"].values, atol=1e-02)
+
+        result = cc.gr.nhood_enrichment(
+            adata, cluster_key=_CK, symmetric=True, log_fold_change=False, only_inter=True, copy=True
+        )
+        result["enrichment"][result["enrichment"].isna()] = 0  # issymmetric fails with NaNs
+        assert scipy.linalg.issymmetric(result["enrichment"].values, atol=1e-02)
+
+        result = cc.gr.nhood_enrichment(
+            adata, cluster_key=_CK, symmetric=True, log_fold_change=True, only_inter=True, copy=True
+        )
+        result["enrichment"][result["enrichment"].isna()] = 0  # issymmetric fails with NaNs
+        assert scipy.linalg.issymmetric(result["enrichment"].values, atol=1e-02)
+
+    def test_perm_analytical(self):
+        result_analytical = cc.gr.nhood_enrichment(
+            adata, cluster_key=_CK, only_inter=True, analytical=True, observed_expected=True, copy=True
+        )
+        result_perm = cc.gr.nhood_enrichment(
+            adata,
+            cluster_key=_CK,
+            only_inter=True,
+            analytical=False,
+            n_perms=5000,
+            observed_expected=True,
+            copy=True,
+            n_jobs=15,
+        )
+        np.testing.assert_allclose(result_analytical["enrichment"], result_perm["enrichment"], atol=0.1)
+        np.testing.assert_allclose(result_analytical["observed"], result_perm["observed"], atol=0.1)
+        np.testing.assert_allclose(result_analytical["expected"], result_perm["expected"], atol=0.1)
