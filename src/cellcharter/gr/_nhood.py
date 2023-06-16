@@ -71,9 +71,7 @@ def nhood_enrichment(
     n_jobs: int = -1,
     copy: bool = False,
     observed_expected: bool = False,
-) -> tuple[pd.DataFrame, pd.DataFrame] | tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame] | tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
-] | None:
+) -> dict | None:
     """
     A modified version of squidpy's `neighborhood enrichment <https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.nhood_enrichment.html>`_.
 
@@ -104,14 +102,14 @@ def nhood_enrichment(
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the following keys:
-        - 'enrichment' - the neighborhood enrichment.
-        - 'pvalue' - the enrichment pvalues if `analytical is False`.
-        - 'observed' - the observed neighborhood proportions if `observed_expected is True`.
-        - 'expected' - the expected neighborhood proportions if `observed_expected is True`.
+        - ``'enrichment'`` - the neighborhood enrichment.
+        - ``'pvalue'`` - the enrichment pvalues if `analytical is False`.
+        - ``'observed'`` - the observed neighborhood proportions if `observed_expected is True`.
+        - ``'expected'`` - the expected neighborhood proportions if `observed_expected is True`.
 
     Otherwise, modifies the ``adata`` with the following key:
         - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']`` - the above mentioned dict.
-        - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']['params']`` - the parameters used.=
+        - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']['params']`` - the parameters used.
     """
     connectivity_key = Key.obsp.spatial_conn(connectivity_key)
     _assert_connectivity_key(adata, connectivity_key)

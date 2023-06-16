@@ -32,7 +32,6 @@ class TestNhoodEnrichment:
         expected = adata.uns[key]["expected"]
 
         assert observed.shape[0] == adata.obs[_CK].cat.categories.shape[0]
-        assert expected.shape[0] == adata.obs[_CK].cat.categories.shape[0]
         assert observed.shape == expected.shape
         assert np.all((observed >= 0) & (observed <= 1))
         assert np.all((expected >= 0) & (expected <= 1))
