@@ -20,6 +20,8 @@ from cellcharter.pl._utils import _heatmap
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
+    row_groups: str | None = None,
+    col_groups: str | None = None,
     annotate: bool = False,
     method: str | None = None,
     title: str | None = "Neighborhood enrichment",
@@ -43,6 +45,10 @@ def nhood_enrichment(
     ----------
     %(adata)s
     %(cluster_key)s
+    row_groups
+        Restrict the rows to these groups. If `None`, all groups are plotted.
+    col_groups
+        Restrict the columns to these groups. If `None`, all groups are plotted.
     %(heatmap_plotting)s
 
     n_digits
@@ -60,6 +66,7 @@ def nhood_enrichment(
     nhood_enrichment_values = _get_data(adata, cluster_key=cluster_key, func_name="nhood_enrichment")
     enrichment = nhood_enrichment_values["enrichment"]
     enrichment[np.isinf(enrichment)] = np.nan
+
     adata_enrichment = AnnData(X=enrichment.astype(np.float32))
     adata_enrichment.obs[cluster_key] = pd.Categorical(enrichment.index)
 
@@ -75,21 +82,31 @@ def nhood_enrichment(
 
     _maybe_set_colors(source=adata, target=adata_enrichment, key=cluster_key, palette=palette)
 
-    vcenter = kwargs.pop("vcenter", 1 if nhood_enrichment_values["params"]["log_fold_change"] else 0)
+    if figsize is None:
+        figsize = list(adata_enrichment.shape[::-1])
+
+        if row_groups is not None:
+            figsize[1] = len(row_groups)
+
+        if col_groups is not None:
+            figsize[0] = len(col_groups)
+
+        figsize = tuple(figsize)
 
     _heatmap(
         adata_enrichment,
         key=cluster_key,
+        rows=row_groups,
+        cols=col_groups,
         annotate=annotate,
         n_digits=n_digits,
         method=method,
         title=title,
         cont_cmap=cmap,
-        figsize=(2 * adata_enrichment.n_obs // 3, 2 * adata_enrichment.n_obs // 3) if figsize is None else figsize,
+        figsize=figsize,
         dpi=dpi,
         cbar_kwargs=cbar_kwargs,
         ax=ax,
-        vcenter=vcenter,
         **kwargs,
     )
 

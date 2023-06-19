@@ -17,11 +17,41 @@ from matplotlib.axes import Axes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scanpy.pl._dotplot import DotPlot
 from scipy.cluster import hierarchy as sch
+from squidpy._constants._pkg_constants import Key
+
+
+def _get_cmap_norm(
+    adata: AnnData,
+    key: str,
+    order: tuple[list[int], list[int]] | None | None = None,
+) -> tuple[mcolors.ListedColormap, mcolors.ListedColormap, mcolors.BoundaryNorm, mcolors.BoundaryNorm, int]:
+    n_rows = n_cols = adata.obs[key].nunique()
+
+    colors = adata.uns[Key.uns.colors(key)]
+
+    if order is not None:
+        row_order, col_order = order
+        row_colors = [colors[i] for i in row_order]
+        col_colors = [colors[i] for i in col_order]
+
+        n_rows = len(row_order)
+        n_cols = len(col_order)
+    else:
+        row_colors = col_colors = colors
+
+    row_cmap = mcolors.ListedColormap(row_colors)
+    col_cmap = mcolors.ListedColormap(col_colors)
+    row_norm = mcolors.BoundaryNorm(np.arange(n_rows + 1), row_cmap.N)
+    col_norm = mcolors.BoundaryNorm(np.arange(n_cols + 1), col_cmap.N)
+
+    return row_cmap, col_cmap, row_norm, col_norm, n_rows
 
 
 def _heatmap(
     adata: AnnData,
     key: str,
+    rows: str | None = None,
+    cols: str | None = None,
     title: str = "",
     method: str | None = None,
     cont_cmap: str | mcolors.Colormap = "bwr",
@@ -45,19 +75,25 @@ def _heatmap(
             adata.X, method, optimal_ordering=adata.n_obs <= 1500
         )
     else:
-        row_order = np.arange(len(adata.obs[key]))
-        col_order = np.arange(len(adata.var_names))
+        row_order = (
+            np.arange(len(adata.obs[key]))
+            if rows is None
+            else np.argwhere(adata.obs.index.isin(np.array(rows).astype(str))).flatten()
+        )
+        col_order = (
+            np.arange(len(adata.var_names))
+            if cols is None
+            else np.argwhere(adata.var_names.isin(np.array(cols).astype(str))).flatten()
+        )
 
     row_order = row_order[::-1]
     row_labels = adata.obs[key][row_order]
-    adata.var_names[col_order]
+    col_labels = adata.var_names[col_order]
 
     data = adata[row_order, col_order].copy().X
 
     # row_cmap, col_cmap, row_norm, col_norm, n_cls = sq.pl._utils._get_cmap_norm(adata, key, order=(row_order, len(row_order) + col_order))
-    row_cmap, col_cmap, row_norm, col_norm, n_cls = sq.pl._utils._get_cmap_norm(
-        adata, key, order=(row_order, col_order)
-    )
+    row_cmap, col_cmap, row_norm, col_norm, n_cls = _get_cmap_norm(adata, key, order=(row_order, col_order))
     col_norm = mcolors.BoundaryNorm(np.arange(len(col_order) + 1), col_cmap.N)
 
     row_sm = mpl.cm.ScalarMappable(cmap=row_cmap, norm=row_norm)
@@ -95,8 +131,8 @@ def _heatmap(
     ax.set_yticks([])
 
     divider = make_axes_locatable(ax)
-    row_cats = divider.append_axes("left", size="3%", pad=0)
-    col_cats = divider.append_axes("top", size="3%", pad=0)
+    row_cats = divider.append_axes("left", size="2%", pad=0.1)
+    col_cats = divider.append_axes("top", size="3%", pad=0.1)
     cax = divider.append_axes("right", size="2%", pad=0.1)
 
     if method is not None:  # cluster rows but don't plot dendrogram
@@ -115,10 +151,8 @@ def _heatmap(
 
     # column labels colorbar
     c = fig.colorbar(col_sm, cax=col_cats, orientation="horizontal", ticklocation="top")
-    # c.set_ticks(np.arange(len(col_labels)) + 0.5)
-    # c.set_ticklabels(col_labels)
-    c.set_ticks([])
-    c.set_ticklabels([])
+    c.set_ticks(np.arange(len(col_labels)) + 0.5)
+    c.set_ticklabels(col_labels)
     (col_cats if method is None else col_ax).set_title(title)
     c.outline.set_visible(False)
 
