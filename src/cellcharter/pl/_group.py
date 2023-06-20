@@ -5,7 +5,6 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from anndata import AnnData
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _get_palette, _maybe_set_colors
@@ -15,30 +14,21 @@ try:
 except ImportError:
     from matplotlib import cm
 
+from cellcharter.gr._group import _proportion
 from cellcharter.pl._utils import _dotplot
-
-
-def _proportion(adata, id_key, val_key, normalize=True):
-    df = pd.pivot(adata.obs[[id_key, val_key]].value_counts().reset_index(), index=id_key, columns=val_key)
-    df.columns = df.columns.droplevel(0)
-    if normalize:
-        return df.div(df.sum(axis=1), axis=0)
-    else:
-        return df
 
 
 def proportion(
     adata: AnnData,
-    x_key: str,
-    y_key: str,
+    group_key: str,
+    label_key: str,
     rotation_xlabel: int = 45,
-    ncols=1,
-    normalize=True,
+    ncols: int = 1,
+    normalize: bool = True,
     palette: Palette_t = None,
     figsize: tuple[float, float] | None = None,
     dpi: int | None = None,
     save: str | Path | None = None,
-    return_df: bool = False,
     **kwargs,
 ) -> None:
     """
@@ -47,14 +37,14 @@ def proportion(
     Parameters
     ----------
     %(adata)s
-    x_key
+    group_key
         Key in :attr:`anndata.AnnData.obs` where groups are stored.
-    y_key
+    label_key
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
     rotation_xlabel
         Rotation in degrees of the ticks of the x axis.
     ncols
-        Number of panels per row.
+        Number of columns for the legend.
     normalize
         If `True` use relative frequencies, outherwise use counts.
     palette
@@ -67,14 +57,14 @@ def proportion(
     -------
     %(plotting_returns)s
     """
-    _assert_categorical_obs(adata, key=x_key)
-    _assert_categorical_obs(adata, key=y_key)
-    _maybe_set_colors(source=adata, target=adata, key=y_key, palette=palette)
+    _assert_categorical_obs(adata, key=group_key)
+    _assert_categorical_obs(adata, key=label_key)
+    _maybe_set_colors(source=adata, target=adata, key=label_key, palette=palette)
 
-    clusters = adata.obs[y_key].cat.categories
-    palette = _get_palette(adata, cluster_key=y_key, categories=clusters)
+    clusters = adata.obs[label_key].cat.categories
+    palette = _get_palette(adata, cluster_key=label_key, categories=clusters)
 
-    df = _proportion(adata=adata, id_key=x_key, val_key=y_key, normalize=normalize)
+    df = _proportion(adata=adata, id_key=group_key, val_key=label_key, normalize=normalize)
     df = df[df.columns[::-1]]
 
     plt.figure(dpi=dpi)
@@ -86,17 +76,6 @@ def proportion(
 
     if save:
         plt.savefig(save, bbox_extra_artists=(lgd, lgd), bbox_inches="tight")
-    if return_df:
-        return df
-
-
-def _enrichment(observed, expected, log=True):
-    enrichment = observed.div(expected, axis="index", level=0)
-
-    if log:
-        enrichment = np.log2(enrichment)
-    enrichment = enrichment.fillna(enrichment.min())
-    return enrichment
 
 
 def enrichment(
@@ -107,10 +86,10 @@ def enrichment(
     color_threshold: float = 1,
     legend_title: str | None = None,
     dot_scale: float = 1,
-    cluster_groups: bool = True,
+    cluster_labels: bool = True,
     groups: list | None = None,
     labels: list | None = None,
-    palette: Palette_t | None = None,
+    palette: Palette_t | matplotlib.colors.ListedColormap | None = None,
     figsize: tuple[float, float] | None = None,
     save: str | Path | None = None,
     **kwargs,
@@ -136,7 +115,7 @@ def enrichment(
     dot_scale
         Scale of the dots.
     cluster_groups
-        If `True`, display groups ordered according to hierarchical clustering.
+        If `True`, display labels ordered according to hierarchical clustering.
     groups
         The groups for which to show the enrichment.
     labels
@@ -147,6 +126,9 @@ def enrichment(
     kwargs
         Keyword arguments for :func:`matplotlib.pyplot.scatter`.
     """
+    if f"{group_key}_{label_key}_enrichment" not in adata.uns:
+        raise ValueError("Run cellcharter.gr.enrichment first.")
+
     if palette is None:
         palette = matplotlib.colors.LinearSegmentedColormap.from_list(
             "", [cm.get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), cm.get_cmap("coolwarm")(255)]
@@ -174,7 +156,7 @@ def enrichment(
         cmap=palette,
         size_title=legend_title,
         dot_scale=dot_scale,
-        cluster_x=cluster_groups,
+        cluster_y=cluster_labels,
         **kwargs,
     )
     if save:

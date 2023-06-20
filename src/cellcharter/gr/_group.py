@@ -7,6 +7,7 @@ from anndata import AnnData
 
 def _proportion(adata, id_key, val_key, normalize=True):
     df = pd.pivot(adata.obs[[id_key, val_key]].value_counts().reset_index(), index=id_key, columns=val_key)
+    df[df.isna()] = 0
     df.columns = df.columns.droplevel(0)
     if normalize:
         return df.div(df.sum(axis=1), axis=0)
@@ -43,6 +44,8 @@ def enrichment(
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
     log
         If `True` use log2 fold change, otherwise use fold change.
+    observed_expected
+        If `True`, return also the observed and expected proportions.
     %(copy)s
 
     Returns

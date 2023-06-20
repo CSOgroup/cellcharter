@@ -98,14 +98,16 @@ def nhood_enrichment(
     n_jobs
         Number of jobs to run in parallel. `-1` means using all processors.
     %(copy)s
+    observed_expected
+        If `True`, return the observed and expected neighborhood proportions.
 
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the following keys:
         - ``'enrichment'`` - the neighborhood enrichment.
-        - ``'pvalue'`` - the enrichment pvalues if `analytical is False`.
-        - ``'observed'`` - the observed neighborhood proportions if `observed_expected is True`.
-        - ``'expected'`` - the expected neighborhood proportions if `observed_expected is True`.
+        - ``'pvalue'`` - the enrichment pvalues (if `analytical is False`).
+        - ``'observed'`` - the observed neighborhood proportions (if `observed_expected is True`).
+        - ``'expected'`` - the expected neighborhood proportions (if `observed_expected is True`).
 
     Otherwise, modifies the ``adata`` with the following key:
         - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']`` - the above mentioned dict.

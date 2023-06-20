@@ -18,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scanpy.pl._dotplot import DotPlot
 from scipy.cluster import hierarchy as sch
 from squidpy._constants._pkg_constants import Key
+from squidpy.pl._color_utils import Palette_t
 
 
 def _get_cmap_norm(
@@ -132,7 +133,7 @@ def _heatmap(
 
     divider = make_axes_locatable(ax)
     row_cats = divider.append_axes("left", size="2%", pad=0.1)
-    col_cats = divider.append_axes("top", size="3%", pad=0.1)
+    col_cats = divider.append_axes("top", size="2%", pad=0.1)
     cax = divider.append_axes("right", size="2%", pad=0.1)
 
     if method is not None:  # cluster rows but don't plot dendrogram
@@ -191,15 +192,15 @@ def _dotplot(
     adata: AnnData,
     x_key: str,
     y_key: str,
-    values,
-    abs_values=False,
-    size_threshold=(None, None),
-    color_threshold=(-1, 1),
-    figsize=None,
-    cmap="bwr",
-    size_title="log2 FC",
-    dot_scale=1,
-    cluster_x=True,
+    values: np.ndarray,
+    abs_values: bool = False,
+    size_threshold: tuple[float, float] | tuple[None, None] = (None, None),
+    color_threshold: tuple[float, float] = (-1, 1),
+    figsize: tuple[float, float] | None = None,
+    cmap: str | Palette_t = "bwr",
+    size_title: str = "log2 FC",
+    dot_scale: float = 1,
+    cluster_y: bool = True,
     **kwargs,
 ):
     values_color = _clip(
@@ -208,7 +209,7 @@ def _dotplot(
     values_color[(values < 0) & (values > color_threshold[0])] = 0  # -0.3
     values_color[(values > 0) & (values < color_threshold[1])] = 0  # 0.3
 
-    if cluster_x is True:
+    if cluster_y is True:
         order = sp.cluster.hierarchy.dendrogram(
             sp.cluster.hierarchy.linkage(values_color.T, method="complete"), no_plot=True
         )["leaves"]

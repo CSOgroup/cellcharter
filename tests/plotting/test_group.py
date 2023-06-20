@@ -18,7 +18,7 @@ class TestPlotEnrichment:
 
     def test_params(self):
         cc.gr.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY)
-        cc.pl.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY, cluster_groups=False)
+        cc.pl.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY, cluster_labels=False)
         cc.pl.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY, size_threshold=100)
         cc.pl.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY, color_threshold=0)
         cc.pl.enrichment(
