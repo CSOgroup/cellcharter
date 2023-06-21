@@ -1,11 +1,8 @@
 import numpy as np
 import pytest
 import scanpy as sc
-import squidpy as sq
 from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
-
-import cellcharter as cc
 
 _adata = sc.read("tests/_data/test_data.h5ad")
 _adata.raw = _adata.copy()
@@ -25,9 +22,6 @@ def adata() -> AnnData:
 
 
 @pytest.fixture()
-def codex_mouse_spleen_adata() -> AnnData:
-    adata = cc.datasets.codex_mouse_spleen()
-
-    sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
-    cc.gr.remove_long_links(adata)
+def codex_adata() -> AnnData:
+    adata = sc.read("tests/_data/codex_adata.h5ad")
     return adata

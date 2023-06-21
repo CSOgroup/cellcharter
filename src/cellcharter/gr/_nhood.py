@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import warnings
+from itertools import combinations
+
 import numpy as np
 import pandas as pd
 from anndata import AnnData
@@ -63,7 +66,7 @@ def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
     connectivity_key: str | None = None,
-    log_fold_change: bool = True,
+    log_fold_change: bool = False,
     only_inter: bool = True,
     symmetric: bool = False,
     analytical: bool = True,
@@ -126,7 +129,7 @@ def nhood_enrichment(
         adata_copy = adata
 
     observed = _observed_n_clusters_links(
-        adata.obsp[connectivity_key],
+        adata_copy.obsp[connectivity_key],
         labels=adata.obs[cluster_key],
         symmetric=symmetric,
     )
@@ -193,104 +196,50 @@ def nhood_enrichment(
         }
 
 
-# def _nhood_enrichment_diff(adata,
-#     cluster_key,
-#     group_key,
-#     group1,
-#     group2,
-#     connectivity_key=Key.obsp.spatial_conn(),
-#     filter_clusters=None,
-#     only_inter=True,
-#     symmetric=False,
-#     cache=None,
-# ):
-#     observed, expected = nhood_enrichment(
-#         adata=adata[adata.obs[group_key].isin(group1)],
-#         cluster_key=cluster_key,
-#         connectivity_key=connectivity_key,
-#         filter_clusters=filter_clusters,
-#         only_inter=only_inter,
-#         symmetric=symmetric,
-#         cache=cache,
-#         cache_group=group1
-#     )
-#     group1_enrichment = observed - expected
+def diff_nhood_enrichment(
+    adata: AnnData,
+    cluster_key: str,
+    condition_key: str,
+    copy: bool = False,
+    **nhood_kwargs,
+) -> dict | None:
+    r"""
+    Differential neighborhood enrichment between conditions.
 
-#     observed, expected = nhood_enrichment(
-#         adata=adata[adata.obs[group_key].isin(group2)],
-#         cluster_key=cluster_key,
-#         connectivity_key=connectivity_key,
-#         filter_clusters=filter_clusters,
-#         only_inter=only_inter,
-#         symmetric=symmetric,
-#         cache=cache,
-#         cache_group=group2
-#     )
+    Parameters
+    ----------
+    %(adata)s
+    %(cluster_key)s
 
-#     group2_enrichment = observed - expected
-#     return group1_enrichment - group2_enrichment
+    condition_key
+        Key in :attr:`anndata.AnnData.obs` where the sample condition is stored.
 
+    %(copy)s
+    nhood_kwargs
+        Keyword arguments for :func:`gr.nhood_enrichment`.
+    """
+    _assert_categorical_obs(adata, key=cluster_key)
+    _assert_categorical_obs(adata, key=condition_key)
 
-# def nhood_enrichment_diff(
-#     adata,
-#     cluster_key,
-#     group_key,
-#     group1,
-#     group2=None,
-#     connectivity_key=Key.obsp.spatial_conn(),
-#     filter_clusters=None,
-#     only_inter=True,
-#     symmetric=False,
-#     pval=None,
-#     n_perms=None,
-#     use_cache=True
-# ):
-#     group1 = [group1] if isinstance(group1, str) else group1
-#     if group2 is None:
-#         group2 = [label for label in adata.obs[group_key].cat.categories if label not in group1]
-#     else:
-#         group2 = [group2] if isinstance(group2, str) else group2
-#     n_observed = len(group1)
-#     n_expected = len(group2)
+    conditions = adata.obs[condition_key].cat.categories
 
-#     observed_diff = _nhood_enrichment_diff(
-#         adata=adata,
-#             cluster_key=cluster_key,
-#             group_key=group_key,
-#             group1=group1,
-#             group2=group2,
-#             connectivity_key=connectivity_key,
-#             filter_clusters=filter_clusters,
-#             only_inter=only_inter,
-#             symmetric=symmetric,
-#             cache=None
-#     )
+    if "observed_expected" in nhood_kwargs:
+        warnings.warn("The `observed_expected` can be used only in `pl.nhood_enrichment`, hence it will be ignored.")
 
-#     cache = dict() if use_cache else None
-#     expected_diffs = list()
-#     for samples_perm in tqdm(np.random.choice(list(group1)+list(group2), size=(n_perms, n_observed+n_expected))):
+    enrichments = {}
+    for condition in conditions:
+        enrichments[condition] = nhood_enrichment(
+            adata[adata.obs[condition_key] == condition],
+            cluster_key=cluster_key,
+            copy=True,
+            **nhood_kwargs,
+        )["enrichment"]
 
-#         expected_diff = _nhood_enrichment_diff(
-#             adata=adata,
-#             cluster_key=cluster_key,
-#             group_key=group_key,
-#             group1=samples_perm[:n_observed],
-#             group2=samples_perm[n_observed:],
-#             connectivity_key=connectivity_key,
-#             filter_clusters=filter_clusters,
-#             only_inter=only_inter,
-#             symmetric=symmetric,
-#             cache=cache
-#         )
+    result = {}
+    for condition1, condition2 in combinations(conditions, 2):
+        result[f"{condition1}_{condition2}"] = {"enrichment": enrichments[condition1] - enrichments[condition2]}
 
-#         expected_diffs.append(expected_diff)
-
-#     expected_diffs = np.stack(expected_diffs, axis=0)
-
-#     empirical_pvals = np.zeros(observed_diff.shape)
-#     empirical_pvals[observed_diff.values > 0] = 1 - np.sum(expected_diffs[:, observed_diff.values > 0] < observed_diff.values[observed_diff.values > 0], axis=0) / n_perms
-#     empirical_pvals[observed_diff.values < 0] = 1 - np.sum(expected_diffs[:, observed_diff.values < 0] > observed_diff.values[observed_diff.values < 0], axis=0) / n_perms
-
-#     observed_diff[empirical_pvals > pval] = np.nan
-
-#     return observed_diff, empirical_pvals
+    if copy:
+        return result
+    else:
+        adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"] = result

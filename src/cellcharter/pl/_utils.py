@@ -51,8 +51,8 @@ def _get_cmap_norm(
 def _heatmap(
     adata: AnnData,
     key: str,
-    rows: str | None = None,
-    cols: str | None = None,
+    rows: list[str] | None = None,
+    cols: list[str] | None = None,
     title: str = "",
     method: str | None = None,
     cont_cmap: str | mcolors.Colormap = "bwr",
@@ -62,6 +62,8 @@ def _heatmap(
     cbar_kwargs: Mapping[str, Any] = MappingProxyType({}),
     ax: Axes | None = None,
     n_digits: int = 2,
+    show_cols: bool = True,
+    show_rows: bool = True,
     **kwargs: Any,
 ) -> mpl.figure.Figure:
 
@@ -132,8 +134,8 @@ def _heatmap(
     ax.set_yticks([])
 
     divider = make_axes_locatable(ax)
-    row_cats = divider.append_axes("left", size="2%", pad=0.1)
-    col_cats = divider.append_axes("top", size="2%", pad=0.1)
+    row_cats = divider.append_axes("left", size=0.1, pad=0.1)
+    col_cats = divider.append_axes("bottom", size=0.1, pad=0.1)
     cax = divider.append_axes("right", size="2%", pad=0.1)
 
     if method is not None:  # cluster rows but don't plot dendrogram
@@ -151,18 +153,30 @@ def _heatmap(
     )
 
     # column labels colorbar
-    c = fig.colorbar(col_sm, cax=col_cats, orientation="horizontal", ticklocation="top")
-    c.set_ticks(np.arange(len(col_labels)) + 0.5)
-    c.set_ticklabels(col_labels)
-    (col_cats if method is None else col_ax).set_title(title)
+    c = fig.colorbar(col_sm, cax=col_cats, orientation="horizontal", ticklocation="bottom")
+
+    if rows == cols or show_cols is False:
+        c.set_ticks([])
+        c.set_ticklabels([])
+    else:
+        c.set_ticks(np.arange(len(col_labels)) + 0.5)
+        c.set_ticklabels(col_labels)
+        if np.any([len(l) > 3 for l in col_labels]):
+            c.ax.tick_params(rotation=90)
     c.outline.set_visible(False)
 
     # row labels colorbar
     c = fig.colorbar(row_sm, cax=row_cats, orientation="vertical", ticklocation="left")
-    c.set_ticks(np.arange(n_cls) + 0.5)
-    c.set_ticklabels(row_labels)
-    c.set_label(key)
+    if show_rows is False:
+        c.set_ticks([])
+        c.set_ticklabels([])
+    else:
+        c.set_ticks(np.arange(n_cls) + 0.5)
+        c.set_ticklabels(row_labels)
+        c.set_label(key)
     c.outline.set_visible(False)
+
+    ax.set_title(title)
 
     return fig, ax
 
