@@ -22,6 +22,8 @@ def proportion(
     adata: AnnData,
     group_key: str,
     label_key: str,
+    groups: list | None = None,
+    labels: list | None = None,
     rotation_xlabel: int = 45,
     ncols: int = 1,
     normalize: bool = True,
@@ -41,6 +43,10 @@ def proportion(
         Key in :attr:`anndata.AnnData.obs` where groups are stored.
     label_key
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
+    groups
+        List of groups to plot.
+    labels
+        List of labels to plot.
     rotation_xlabel
         Rotation in degrees of the ticks of the x axis.
     ncols
@@ -66,6 +72,12 @@ def proportion(
 
     df = _proportion(adata=adata, id_key=group_key, val_key=label_key, normalize=normalize)
     df = df[df.columns[::-1]]
+
+    if groups is not None:
+        df = df.loc[groups, :]
+
+    if labels is not None:
+        df = df.loc[:, labels]
 
     plt.figure(dpi=dpi)
     ax = df.plot.bar(stacked=True, figsize=figsize, color=palette, rot=rotation_xlabel, ax=plt.gca(), **kwargs)

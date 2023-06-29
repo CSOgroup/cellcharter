@@ -9,6 +9,20 @@ key = f"{GROUP_KEY}_{LABEL_KEY}_enrichment"
 adata = sq.datasets.merfish()
 
 
+class TestProportion:
+    def test_proportion(self):
+        cc.pl.proportion(adata, group_key=GROUP_KEY, label_key=LABEL_KEY)
+
+    def test_groups_labels(self):
+        cc.pl.proportion(
+            adata,
+            group_key=GROUP_KEY,
+            label_key=LABEL_KEY,
+            groups=adata.obs[GROUP_KEY].cat.categories[:3],
+            labels=adata.obs[LABEL_KEY].cat.categories[:4],
+        )
+
+
 class TestPlotEnrichment:
     def test_enrichment(self):
         cc.gr.enrichment(adata, group_key=GROUP_KEY, label_key=LABEL_KEY)
