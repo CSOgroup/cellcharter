@@ -61,15 +61,15 @@ class TestNhoodEnrichment:
         result["enrichment"][result["enrichment"].isna()] = 0  # issymmetric fails with NaNs
         assert scipy.linalg.issymmetric(result["enrichment"].values, atol=1e-02)
 
-    def test_perm_analytical(self):
+    def test_perm(self):
         result_analytical = cc.gr.nhood_enrichment(
-            adata, cluster_key=_CK, only_inter=True, analytical=True, observed_expected=True, copy=True
+            adata, cluster_key=_CK, only_inter=True, pvalues=False, observed_expected=True, copy=True
         )
         result_perm = cc.gr.nhood_enrichment(
             adata,
             cluster_key=_CK,
             only_inter=True,
-            analytical=False,
+            pvalues=True,
             n_perms=5000,
             observed_expected=True,
             copy=True,

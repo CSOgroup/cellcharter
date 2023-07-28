@@ -31,16 +31,15 @@ def _observed_n_clusters_links(adj, labels, symmetric=True):
     return obs
 
 
-def _expected_n_clusters_links(
-    adata, clusters, cluster_key, connectivity_key=Key.obsp.spatial_conn(), only_inter=False, symmetric=True
-):
-    degrees = np.array([np.mean(np.sum(adata.obsp[connectivity_key], axis=1))] * adata.shape[0])
+def _expected_n_clusters_links(adj, labels, only_inter=False, symmetric=True):
+    labels_unique = labels.cat.categories
+    degrees = np.array([np.mean(np.sum(adj, axis=1))] * adj.shape[0])
 
-    exp = np.zeros((len(clusters), len(clusters)))
-    for i, c1 in enumerate(clusters):
-        for j, c2 in enumerate(clusters):
-            source_factor = np.sum(degrees[adata.obs[cluster_key] == c1])
-            target_factor = np.sum(degrees[adata.obs[cluster_key] == c2])
+    exp = np.zeros((len(labels_unique), len(labels_unique)))
+    for i, c1 in enumerate(labels_unique):
+        for j, c2 in enumerate(labels_unique):
+            source_factor = np.sum(degrees[labels == c1])
+            target_factor = np.sum(degrees[labels == c2])
 
             exp[i, j] = target_factor
             exp[i, j] /= np.sum(degrees)
@@ -52,14 +51,85 @@ def _expected_n_clusters_links(
             if symmetric:
                 exp[i, j] *= source_factor
 
-    exp = pd.DataFrame(exp, columns=clusters, index=clusters)
+    exp = pd.DataFrame(exp, columns=labels_unique, index=labels_unique)
     return exp
+
+
+def _empirical_pvalues(observed, expected):
+    pvalues = np.zeros(observed.shape)
+    pvalues[observed.values > 0] = (
+        1 - np.sum(expected[:, observed.values > 0] < observed.values[observed.values > 0], axis=0) / expected.shape[0]
+    )
+    pvalues[observed.values < 0] = (
+        1 - np.sum(expected[:, observed.values < 0] > observed.values[observed.values < 0], axis=0) / expected.shape[0]
+    )
+    return pd.DataFrame(pvalues, columns=observed.columns, index=observed.index)
 
 
 def _observed_permuted(adj, labels, symmetric=True):
     # Permute labels
     labels = labels.sample(frac=1).reset_index(drop=True)
     return _observed_n_clusters_links(adj, labels, symmetric=symmetric)
+
+
+def _nhood_enrichment(
+    adj,
+    labels,
+    log_fold_change: bool = False,
+    only_inter: bool = True,
+    symmetric: bool = False,
+    pvalues: bool = False,
+    n_perms: int = 1000,
+    n_jobs: int = -1,
+    observed_expected=False,
+):
+    cluster_categories = labels.cat.categories
+
+    observed = _observed_n_clusters_links(
+        adj,
+        labels=labels,
+        symmetric=symmetric,
+    )
+
+    if not pvalues:
+        expected = _expected_n_clusters_links(
+            adj,
+            labels=labels,
+            only_inter=only_inter,
+            symmetric=symmetric,
+        )
+    else:
+        expected = Parallel(n_jobs=n_jobs)(
+            delayed(_observed_permuted)(
+                adj,
+                labels=labels,
+                symmetric=symmetric,
+            )
+            for _ in tqdm(range(n_perms))
+        )
+
+        expected = np.stack(expected, axis=0)
+
+        emprical_pvalues = _empirical_pvalues(observed, expected)
+
+        expected = np.mean(expected, axis=0)
+        expected = pd.DataFrame(expected, columns=cluster_categories, index=cluster_categories)
+
+    enrichment = np.log2(observed / expected) if log_fold_change else observed - expected
+    if only_inter:
+        np.fill_diagonal(observed.values, np.nan)
+        np.fill_diagonal(expected.values, np.nan)
+        np.fill_diagonal(enrichment.values, np.nan)
+
+    result = {"enrichment": enrichment}
+
+    if pvalues:
+        result["pvalue"] = emprical_pvalues
+
+    if observed_expected:
+        result["observed"] = observed
+        result["expected"] = expected
+    return result
 
 
 def nhood_enrichment(
@@ -69,11 +139,11 @@ def nhood_enrichment(
     log_fold_change: bool = False,
     only_inter: bool = True,
     symmetric: bool = False,
-    analytical: bool = True,
+    pvalues: bool = False,
     n_perms: int = 1000,
     n_jobs: int = -1,
-    copy: bool = False,
     observed_expected: bool = False,
+    copy: bool = False,
 ) -> dict | None:
     """
     A modified version of squidpy's `neighborhood enrichment <https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.nhood_enrichment.html>`_.
@@ -94,12 +164,12 @@ def nhood_enrichment(
         Consider only links between cells that belong to the different clusters.
     symmetric
         If `True`, the neighborhood enrichment between `cell1` and `cell2` is equal to the enrichment between `cell2` and `cell1`.
-    analytical
-        If `True`, compute the expected neighborhood enrichment using the analytical formula.
+    pvalues
+        If `True`, compute the p-values for each neighborhood enrichment value using permutation of the cluster labels.
     n_perms
-        Number of permutations to use to compute the expected neighborhood enrichment.
+        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues is True`.
     n_jobs
-        Number of jobs to run in parallel. `-1` means using all processors.
+        Number of jobs to run in parallel if `pvalues is True`. `-1` means using all processors.
     %(copy)s
     observed_expected
         If `True`, return the observed and expected neighborhood proportions.
@@ -108,7 +178,7 @@ def nhood_enrichment(
     -------
     If ``copy = True``, returns a :class:`dict` with the following keys:
         - ``'enrichment'`` - the neighborhood enrichment.
-        - ``'pvalue'`` - the enrichment pvalues (if `analytical is False`).
+        - ``'pvalue'`` - the enrichment pvalues (if `pvalues is True`).
         - ``'observed'`` - the observed neighborhood proportions (if `observed_expected is True`).
         - ``'expected'`` - the expected neighborhood proportions (if `observed_expected is True`).
 
@@ -120,67 +190,23 @@ def nhood_enrichment(
     _assert_connectivity_key(adata, connectivity_key)
     _assert_categorical_obs(adata, key=cluster_key)
 
-    cluster_categories = adata.obs[cluster_key].cat.categories
-
     if only_inter:
         adata_copy = adata.copy()
         remove_intra_cluster_links(adata_copy, cluster_key=cluster_key)
     else:
         adata_copy = adata
 
-    observed = _observed_n_clusters_links(
+    result = _nhood_enrichment(
         adata_copy.obsp[connectivity_key],
-        labels=adata.obs[cluster_key],
+        adata_copy.obs[cluster_key],
+        log_fold_change=log_fold_change,
+        only_inter=only_inter,
         symmetric=symmetric,
+        pvalues=pvalues,
+        n_perms=n_perms,
+        n_jobs=n_jobs,
+        observed_expected=observed_expected,
     )
-
-    if analytical:
-        expected = _expected_n_clusters_links(
-            adata_copy,
-            clusters=cluster_categories,
-            cluster_key=cluster_key,
-            connectivity_key=connectivity_key,
-            only_inter=only_inter,
-            symmetric=symmetric,
-        )
-    else:
-        expected = Parallel(n_jobs=n_jobs)(
-            delayed(_observed_permuted)(
-                adata.obsp[connectivity_key],
-                labels=adata.obs[cluster_key],
-                symmetric=symmetric,
-            )
-            for _ in tqdm(range(n_perms))
-        )
-
-        expected = np.stack(expected, axis=0)
-        pvalues = np.zeros(observed.shape)
-        pvalues[observed.values > 0] = (
-            1 - np.sum(expected[:, observed.values > 0] < observed.values[observed.values > 0], axis=0) / n_perms
-        )
-        pvalues[observed.values < 0] = (
-            1 - np.sum(expected[:, observed.values < 0] > observed.values[observed.values < 0], axis=0) / n_perms
-        )
-        pvalues = pd.DataFrame(pvalues, columns=cluster_categories, index=cluster_categories)
-
-        expected = np.mean(expected, axis=0)
-        expected = pd.DataFrame(expected, columns=cluster_categories, index=cluster_categories)
-
-    enrichment = np.log2(observed / expected) if log_fold_change else observed - expected
-
-    if only_inter:
-        np.fill_diagonal(observed.values, np.nan)
-        np.fill_diagonal(expected.values, np.nan)
-        np.fill_diagonal(enrichment.values, np.nan)
-
-    result = {"enrichment": enrichment}
-
-    if not analytical:
-        result["pvalue"] = pvalues
-
-    if observed_expected:
-        result["observed"] = observed
-        result["expected"] = expected
 
     if copy:
         return result
@@ -191,15 +217,31 @@ def nhood_enrichment(
             "log_fold_change": log_fold_change,
             "only_inter": only_inter,
             "symmetric": symmetric,
-            "analytical": analytical,
-            "n_perms": n_perms if not analytical else None,
+            "pvalues": pvalues,
+            "n_perms": n_perms if pvalues else None,
         }
+
+
+def _diff_enrichment_permuted(
+    adata: AnnData,
+    cluster_key: str,
+    subsamples_perm: np.ndarray,
+    library_key: str | None = "library_id",
+) -> dict:
+    adata.obs["condition"] = pd.Categorical(adata.obs[library_key].isin(subsamples_perm).astype(int))
+    return diff_nhood_enrichment(adata, cluster_key=cluster_key, condition_key="condition", pvalues=False, copy=True)[
+        "0_1"
+    ]["enrichment"]
 
 
 def diff_nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
     condition_key: str,
+    library_key: str | None = "library_id",
+    pvalues: bool = False,
+    n_perms: int = 1000,
+    n_jobs: int = -1,
     copy: bool = False,
     **nhood_kwargs,
 ) -> dict | None:
@@ -214,9 +256,29 @@ def diff_nhood_enrichment(
     condition_key
         Key in :attr:`anndata.AnnData.obs` where the sample condition is stored.
 
+    %(library_key)s
+    pvalues
+        If `True`, compute the p-values for each differential neighborhood enrichment through permutation of the condition key for each Z-dimension.
+    n_perms
+        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues is True`.
+    n_jobs
+        Number of jobs to run in parallel if `pvalues is True`. `-1` means using all processors.
+
     %(copy)s
     nhood_kwargs
-        Keyword arguments for :func:`gr.nhood_enrichment`.
+        Keyword arguments for :func:`gr.nhood_enrichment`. The following arguments are not allowed:
+            - ``'observed_expected'``
+            - ``n_perms``
+            - ``pvalues``
+            - ``n_jobs``
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` of all pairwise differential neighborhood enrichments between conditions stored as ``{condition1}_{condition2}``.
+    The differential neighborhood enrichment is a :class:`dict` with the following keys:
+        - ``'enrichment'`` - the differential neighborhood enrichment.
+        - ``'pvalue'`` - the enrichment pvalues (if `pvalues is True`).
+
     """
     _assert_categorical_obs(adata, key=cluster_key)
     _assert_categorical_obs(adata, key=condition_key)
@@ -224,7 +286,9 @@ def diff_nhood_enrichment(
     conditions = adata.obs[condition_key].cat.categories
 
     if "observed_expected" in nhood_kwargs:
-        warnings.warn("The `observed_expected` can be used only in `pl.nhood_enrichment`, hence it will be ignored.")
+        warnings.warn(
+            "The `observed_expected` can be used only in `pl.nhood_enrichment`, hence it will be ignored.", stacklevel=2
+        )
 
     enrichments = {}
     for condition in conditions:
@@ -237,7 +301,28 @@ def diff_nhood_enrichment(
 
     result = {}
     for condition1, condition2 in combinations(conditions, 2):
-        result[f"{condition1}_{condition2}"] = {"enrichment": enrichments[condition1] - enrichments[condition2]}
+        observed = enrichments[condition1] - enrichments[condition2]
+        result[f"{condition1}_{condition2}"] = {"enrichment": observed}
+        if pvalues:
+            samples1 = adata[adata.obs[condition_key] == condition1].obs[library_key].unique()
+            samples2 = adata[adata.obs[condition_key] == condition2].obs[library_key].unique()
+
+            samples_perms = np.random.choice(
+                np.concatenate((samples1, samples2)), size=(n_perms, len(samples1) + len(samples2))
+            )
+            adata_perms = adata.copy()
+            expected = Parallel(n_jobs=n_jobs)(
+                delayed(_diff_enrichment_permuted)(
+                    adata_perms,
+                    cluster_key=cluster_key,
+                    subsamples_perm=samples_perm[: len(samples1)],
+                    library_key=library_key,
+                )
+                for samples_perm in tqdm(samples_perms)
+            )
+            expected = np.stack(expected, axis=0)
+            pvalues = _empirical_pvalues(observed, expected)
+            result[f"{condition1}_{condition2}"]["pvalue"] = pvalues
 
     if copy:
         return result

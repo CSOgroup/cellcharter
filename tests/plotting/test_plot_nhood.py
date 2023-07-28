@@ -19,7 +19,7 @@ class TestPlotNhoodEnrichment:
         del adata.uns[key]
 
     def test_significance(self):
-        cc.gr.nhood_enrichment(adata, cluster_key=_CK, analytical=False, n_perms=100)
+        cc.gr.nhood_enrichment(adata, cluster_key=_CK, pvalues=True, n_perms=100)
 
         cc.pl.nhood_enrichment(adata, cluster_key=_CK, significance=0.05)
         cc.pl.nhood_enrichment(adata, cluster_key=_CK, annotate=True, significance=0.05)

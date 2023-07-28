@@ -66,7 +66,6 @@ def _heatmap(
     show_rows: bool = True,
     **kwargs: Any,
 ) -> mpl.figure.Figure:
-
     cbar_kwargs = dict(cbar_kwargs)
     if ax is None:
         fig, ax = plt.subplots(constrained_layout=True, dpi=dpi, figsize=figsize)
@@ -112,7 +111,7 @@ def _heatmap(
     annot = np.round(data[::-1], n_digits).astype(str) if annotate else None
     if "significant" in adata.layers:
         significant = adata.layers["significant"].astype(str)
-        annot = np.char.add(np.empty_like(data[::-1], dtype=str), significant)
+        annot = np.char.add(np.empty_like(data[::-1], dtype=str), significant[row_order[:, None], col_order][::-1])
 
     ax = sns.heatmap(
         data[::-1],

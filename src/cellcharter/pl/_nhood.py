@@ -46,12 +46,13 @@ def _plot_nhood_enrichment(
     if significance is not None:
         if "pvalue" not in nhood_enrichment_values:
             warnings.warn(
-                "Significance requires gr.nhood_enrichment to be run with analytical=False. Ignoring significance.",
+                "Significance requires gr.nhood_enrichment to be run with pvalues=True. Ignoring significance.",
                 UserWarning,
+                stacklevel=2,
             )
         else:
             adata_enrichment.layers["significant"] = np.empty_like(enrichment, dtype=str)
-            adata_enrichment.layers["significant"][nhood_enrichment_values["pvalue"] <= significance] = "*"
+            adata_enrichment.layers["significant"][nhood_enrichment_values["pvalue"].values <= significance] = "*"
 
     _maybe_set_colors(source=adata, target=adata_enrichment, key=cluster_key, palette=palette)
 
@@ -121,7 +122,7 @@ def nhood_enrichment(
     n_digits
         The number of digits of the number in the annotations.
     significance
-        Mark the values that are below this threshold with a star. If `None`, no significance is computed. It requires ``gr.nhood_enrichment`` to be run with ``analytical=False``.
+        Mark the values that are below this threshold with a star. If `None`, no significance is computed. It requires ``gr.nhood_enrichment`` to be run with ``pvalues=True``.
     kwargs
         Keyword arguments for :func:`matplotlib.pyplot.text`.
 
@@ -207,14 +208,16 @@ def diff_nhood_enrichment(
 
     n_combinations = len(conditions) * (len(conditions) - 1) // 2
 
+    figsize = nhood_kwargs.get("figsize", rcParams["figure.figsize"])
+
     # Plot neighborhood enrichment for each condition pair as a subplot
     _, grid = _panel_grid(
         num_panels=n_combinations,
         hspace=hspace,
-        wspace=0.75 / rcParams["figure.figsize"][0] + 0.02 if wspace is None else wspace,
+        wspace=0.75 / figsize[0] + 0.02 if wspace is None else wspace,
         ncols=ncols,
         dpi=nhood_kwargs.get("dpi", rcParams["figure.dpi"]),
-        figsize=nhood_kwargs.get("dpi", rcParams["figure.figsize"]),
+        figsize=nhood_kwargs.get("dpi", figsize),
     )
 
     axs = [plt.subplot(grid[c]) for c in range(n_combinations)]
