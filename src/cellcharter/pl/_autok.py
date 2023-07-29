@@ -5,14 +5,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from sklearn.metrics import fowlkes_mallows_score
 
 from cellcharter.tl import ClusterAutoK
 
 
-def autok_stability(
-    autok: ClusterAutoK, save: str | Path | None = None, similarity_function=fowlkes_mallows_score, n_jobs: int = 1
-) -> None:
+def autok_stability(autok: ClusterAutoK, save: str | Path | None = None, return_ax: bool = False) -> None:
     """
     Plot the clustering stability.
 
@@ -40,3 +37,9 @@ def autok_stability(
     ax.set_xticks(autok.n_clusters[1:-1])
     if save:
         plt.savefig(save)
+
+    ax.spines.right.set_visible(False)
+    ax.spines.top.set_visible(False)
+
+    if return_ax:
+        return ax

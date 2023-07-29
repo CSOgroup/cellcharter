@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import inspect
 import json
 import logging
@@ -7,6 +8,7 @@ import os
 import pickle
 import warnings
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -15,11 +17,10 @@ import numpy as np
 import pandas as pd
 from lightkit.utils.path import PathType
 from pycave import set_logging_level
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import fowlkes_mallows_score, mean_absolute_percentage_error
 from tqdm.auto import tqdm
 
 import cellcharter as cc
-from cellcharter.tl._utils import _stability
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,14 @@ class ClusterAutoK:
         Range for number of clusters (bounds included).
     max_runs
         Maximum number of repetitions for each value of number of clusters.
+    convergence_tol
+        Convergence tolerance for the clustering stability. If the Mean Absolute Percentage Error between consecutive iterations is below `convergence_tol` the algorithm stops without reaching `max_runs`.
     model_class
         Class of the model to be used for clustering. It must accept as `random_state` and `n_clusters` as initialization parameters.
     model_params
         Keyword args for `model_class`
+    similarity_function
+        The similarity function used between clustering results. Defaults to :func:`sklearn.metrics.fowlkes_mallows_score`.
     Examples
     --------
     >>> adata = anndata.read_h5ad(path_to_anndata)
@@ -64,6 +69,7 @@ class ClusterAutoK:
         self,
         n_clusters: tuple[int, int] | list[int],
         max_runs: int = 10,
+        convergence_tol: float = 1e-2,
         model_class: type = None,
         model_params: dict = None,
         similarity_function: callable = None,
@@ -74,9 +80,11 @@ class ClusterAutoK:
             else n_clusters
         )
         self.max_runs = max_runs
+        self.convergence_tol = convergence_tol
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
         self.model_params = model_params if model_params else {}
-        self.similarity_function = similarity_function if similarity_function else adjusted_rand_score
+        self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
+        self.stability = []
 
     def fit(self, adata: ad.AnnData, use_rep: str = None):
         """
@@ -87,11 +95,16 @@ class ClusterAutoK:
         adata
             Annotated data object.
         use_rep
-            Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model.
+            Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.obsm['X_cellcharter']` if present, otherwise :attr:`anndata.AnnData.X`.
         """
         logging_level = logging.root.level
-
-        X = adata.X if use_rep is None else adata.obsm[use_rep]
+        X = (
+            adata.obsm[use_rep]
+            if use_rep is not None
+            else adata.obsm["X_cellcharter"]
+            if "X_cellcharter" in adata.obsm
+            else adata.X
+        )
 
         set_logging_level(logging.WARNING)
 
@@ -100,6 +113,7 @@ class ClusterAutoK:
 
         random_state = self.model_params.pop("random_state", 0)
 
+        previous_stability = None
         for i in range(self.max_runs):
             print(f"Iteration {i+1}/{self.max_runs}")
             new_labels = {}
@@ -112,15 +126,51 @@ class ClusterAutoK:
                 if (k not in self.best_models.keys()) or (clustering.nll_ < self.best_models[k].nll_):
                     self.best_models[k] = clustering
 
+            if i > 0:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    pairs = [
+                        (new_labels[k], self.labels[k + 1][i])
+                        for i in range(len(list(self.labels.values())[0]))
+                        for k in list(self.labels.keys())[:-1]
+                    ]
+                    self.stability.extend(list(executor.map(lambda x: self.similarity_function(*x), pairs)))
+
+                if previous_stability is not None:
+                    stability_change = mean_absolute_percentage_error(
+                        np.mean(self._mirror_stability(previous_stability), axis=1),
+                        np.mean(self._mirror_stability(self.stability), axis=1),
+                    )
+                    if stability_change < self.convergence_tol:
+                        for k, new_l in new_labels.items():
+                            self.labels[k].append(new_l)
+                        print(
+                            f"Convergence with a change in stability of {stability_change} reached after {i+1} iterations"
+                        )
+                        break
+
+                previous_stability = deepcopy(self.stability)
+
             for k, new_l in new_labels.items():
                 self.labels[k].append(new_l)
 
-        self.stability = _stability(self.labels, self.max_runs, similarity_function=self.similarity_function)
+        if self.max_runs > 1:
+            self.stability = self._mirror_stability(self.stability)
+        else:
+            self.stability = None
         set_logging_level(logging_level)
+
+    def _mirror_stability(self, stability):
+        stability = [
+            stability[i : i + len(self.n_clusters) - 1] for i in range(0, len(stability), len(self.n_clusters) - 1)
+        ]
+        stability = list(map(list, zip(*stability)))
+        return np.array([stability[i] + stability[i - 1] for i in range(1, len(stability))])
 
     @property
     def best_k(self) -> int:
         """The number of clusters with the highest stability."""
+        if self.max_runs <= 1:
+            raise ValueError("Cannot compute stability with max_runs <= 1")
         stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
@@ -134,14 +184,20 @@ class ClusterAutoK:
         adata
             Annotated data object.
         use_rep
-            Key in :attr:`anndata.AnnData.obsm` used as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
+            Key in :attr:`anndata.AnnData.obsm` used as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.obsm['X_cellcharter']` if present, otherwise :attr:`anndata.AnnData.X`.
         k
             Number of clusters to predict using the fitted model. If ``None``, the number of clusters with the highest stability will be selected. If ``max_runs > 1``, the model with the largest marginal likelihood will be used among the ones fitted on ``k``.
         """
         k = self.best_k if k is None else k
         assert k is None or k in self.n_clusters
 
-        X = adata.X if use_rep is None else adata.obsm[use_rep]
+        X = (
+            adata.obsm[use_rep]
+            if use_rep is not None
+            else adata.obsm["X_cellcharter"]
+            if "X_cellcharter" in adata.obsm
+            else adata.X
+        )
         return pd.Categorical(self.best_models[k].predict(X), categories=np.arange(k))
 
     @property
@@ -187,7 +243,8 @@ class ClusterAutoK:
                 f.write(data)
         except TypeError:
             warnings.warn(
-                f"Failed to serialize parameters of `{self.__class__.__name__}` to JSON. " "Falling back to `pickle`."
+                f"Failed to serialize parameters of `{self.__class__.__name__}` to JSON. " "Falling back to `pickle`.",
+                stacklevel=2,
             )
             with (path / "params.pickle").open("wb+") as f:
                 pickle.dump(params, f)
@@ -225,7 +282,8 @@ class ClusterAutoK:
         except TypeError:
             warnings.warn(
                 f"Failed to serialize fitted attributes of `{self.__class__.__name__}` to JSON. "
-                "Falling back to `pickle`."
+                "Falling back to `pickle`.",
+                stacklevel=2,
             )
             with (path / "attributes.pickle").open("wb+") as f:
                 pickle.dump(attributes, f)
@@ -252,7 +310,7 @@ class ClusterAutoK:
         try:
             model._load_attributes(path)
         except FileNotFoundError:
-            warnings.warn(f"Failed to read fitted attributes of `{cls.__name__}` at path '{path}'")
+            warnings.warn(f"Failed to read fitted attributes of `{cls.__name__}` at path '{path}'", stacklevel=2)
 
         return model
 

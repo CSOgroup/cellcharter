@@ -5,13 +5,14 @@ from joblib import Parallel, delayed
 from sklearn.metrics import adjusted_rand_score
 
 
-def _stability(labels, max_runs, similarity_function=adjusted_rand_score, n_jobs=-1):
-    num_labels = len(labels)
+def _stability(labels, similarity_function=adjusted_rand_score, n_jobs=-1):
+    clusters = list(labels.keys())
+    max_runs = len(labels[clusters[0]])
     num_combinations = max_runs * (max_runs - 1) // 2
 
     stabilities = Parallel(n_jobs=n_jobs)(
-        delayed(similarity_function)(labels[k][i], labels[k + 1][j])
-        for k in range(1, num_labels)
+        delayed(similarity_function)(labels[clusters[k]][i], labels[clusters[k] + 1][j])
+        for k in range(len(clusters) - 1)
         for i, j in combinations(range(max_runs), 2)
     )
 
