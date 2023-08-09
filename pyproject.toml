@@ -31,16 +31,17 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     # CLI for bumping the version number
-    "bump2version",
     "pre-commit",
     "twine>=4.0.2"
 ]
 doc = [
+    "docutils>=0.8,!=0.18.*,!=0.19.*",
     "sphinx>=4",
     "sphinx-book-theme>=1.0.0",
     "myst-nb",
     "sphinxcontrib-bibtex>=1.0.0",
     "sphinx-autodoc-typehints",
+    "sphinxext-opengraph",
     # For notebooks
     "ipykernel",
     "ipython",
