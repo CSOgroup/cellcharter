@@ -73,7 +73,7 @@ in the root of the repository. Continuous integration will automatically run the
 
 ### Updating the version number
 
-Before making a release, you need to update the version number. Please adhere to [Semantic Versioning][semver], in brief
+Before making a release, you need to update the version number in the `pyproject.toml` file. Please adhere to [Semantic Versioning][semver], in brief
 
 > Given a version number MAJOR.MINOR.PATCH, increment the:
 >
@@ -83,27 +83,19 @@ Before making a release, you need to update the version number. Please adhere to
 >
 > Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format.
 
-We use [bump2version][] to automatically update the version number in all places and automatically create a git tag.
-Run one of the following commands in the root of the repository
-
-```bash
-bump2version patch
-bump2version minor
-bump2version major
-```
-
 Once you are done, run
 
 ```
 git push --tags
 ```
 
-to publish the created tag on GitHub.
+to publish the created tag on GitHub. Alternatively, it is possible to create a tag through the Github web interface. For more information, see [managing Github releases][]. This will automatically trigger a Github workflow that creates a release on PyPI.
 
-[bump2version]: https://github.com/c4urself/bump2version
+### The release Github workflow
 
-### Building and publishing the package on PyPI
+#### Behind the scenes
 
+This section explains how releases can be created manually purely for educational purposes. Experienced developers may skip this section.
 Python packages are not distributed as source code, but as _distributions_. The most common distribution format is the so-called _wheel_. To build a _wheel_, run
 
 ```bash
@@ -128,9 +120,16 @@ Provide your username and password when requested and then go check out your pac
 
 For more information, follow the [Python packaging tutorial][].
 
-It is possible to automate this with GitHub actions, see also [this feature request][pypi-feature-request]
-in the cookiecutter-scverse template.
+#### Configuring the Github workflow
 
+Tags adhering to `"*.*.*"` that are pushed to the `main` branch will trigger the release Github workflow that automatically builds and uploads the Python package to [PyPI][].
+For this to work, the `PYPI_API_TOKEN` Github secret needs to be set to the value of the [PyPI][] token.
+See [Creating PyPI tokens][] for instructions on how to create a [PyPI][] token.
+Finally, set your `PYPI_API_TOKEN` Github secret equal to the value of the just created [PyPI][] token by following [creating Github secrets][].
+
+[creating github secrets]: https://docs.github.com/en/actions/security-guides/encrypted-secrets
+[creating pypi tokens]: https://pypi.org/help/#apitoken
+[managing github releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
 [python packaging tutorial]: https://packaging.python.org/en/latest/tutorials/packaging-projects/#generating-distribution-archives
 [pypi-feature-request]: https://github.com/scverse/cookiecutter-scverse/issues/88
 
@@ -151,7 +150,7 @@ on how to write documentation.
 
 The documentation is set-up to render jupyter notebooks stored in the `docs/notebooks` directory using [myst-nb][].
 Currently, only notebooks in `.ipynb` format are supported that will be included with both their input and output cells.
-It is your reponsibility to update and re-run the notebook whenever necessary.
+It is your responsibility to update and re-run the notebook whenever necessary.
 
 If you are interested in automatically running notebooks as part of the continuous integration, please check
 out [this feature request](https://github.com/scverse/cookiecutter-scverse/issues/40) in the `cookiecutter-scverse`
