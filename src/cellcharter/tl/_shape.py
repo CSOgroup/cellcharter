@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from collections import deque
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import networkx as nx
 import numpy as np
+import shapely
+import sknw
 from anndata import AnnData
+from rasterio import features
 from scipy.spatial import Delaunay
 from shapely import geometry
 from shapely.ops import polygonize, unary_union
+from skimage.morphology import skeletonize
 
 
 def _alpha_shape(coords, alpha):
@@ -127,3 +133,151 @@ def boundaries(
         return boundaries
 
     adata.uns[f"boundaries_{cluster_key}"] = boundaries
+
+
+def _find_dangling_branches(graph, total_length, min_ratio=0.05):
+    total_length = np.sum(list(nx.get_edge_attributes(graph, "weight").values()))
+    adj = nx.to_numpy_array(graph, weight=None)
+    adj_w = nx.to_numpy_array(graph)
+
+    n_neighbors = np.sum(adj, axis=1)
+    node_total_dist = np.sum(adj_w, axis=1)
+    dangling_nodes = np.argwhere((node_total_dist < min_ratio * total_length) & (n_neighbors == 1))
+    if dangling_nodes.shape[0] != 1:
+        dangling_nodes = dangling_nodes.squeeze()
+    else:
+        dangling_nodes = dangling_nodes[0]
+    return dangling_nodes
+
+
+def _remove_dangling_branches(graph, min_ratio=0.05):
+    total_length = np.sum(list(nx.get_edge_attributes(graph, "weight").values()))
+
+    dangling_branches = _find_dangling_branches(graph, total_length=total_length, min_ratio=min_ratio)
+
+    while len(dangling_branches) > 0:
+        idx2node = dict(enumerate(graph.nodes))
+        for i in dangling_branches:
+            graph.remove_node(idx2node[i])
+
+        dangling_branches = _find_dangling_branches(graph, total_length=total_length, min_ratio=min_ratio)
+
+
+def _longest_path_from_node(graph, u):
+    visited = {i: False for i in list(graph.nodes)}
+    distance = {i: -1 for i in list(graph.nodes)}
+    idx2node = dict(enumerate(graph.nodes))
+
+    try:
+        adj_lil = nx.to_scipy_sparse_matrix(graph, format="lil")
+    except AttributeError:
+        adj_lil = nx.to_scipy_sparse_array(graph, format="lil")
+    adj = {i: [idx2node[neigh] for neigh in neighs] for i, neighs in zip(graph.nodes, adj_lil.rows)}
+    weight = nx.get_edge_attributes(graph, "weight")
+
+    distance[u] = 0
+    queue = deque()
+    queue.append(u)
+    visited[u] = True
+    while queue:
+        front = queue.popleft()
+        for i in adj[front]:
+            if not visited[i]:
+                visited[i] = True
+                source, target = min(i, front), max(i, front)
+                distance[i] = distance[front] + weight[(source, target)]
+                queue.append(i)
+
+    farthest_node = max(distance, key=distance.get)
+
+    longest_path_length = distance[farthest_node]
+    return farthest_node, longest_path_length
+
+
+def _longest_path_length(graph):
+    # first DFS to find one end point of longest path
+    node, _ = _longest_path_from_node(graph, list(graph.nodes)[0])
+    # second DFS to find the actual longest path
+    _, longest_path_length = _longest_path_from_node(graph, node)
+    return longest_path_length
+
+
+def _linearity(boundary, height=1000, min_ratio=0.05):
+    img, _ = _rasterize(boundary, height=height)
+    skeleton = skeletonize(img).astype(int)
+
+    graph = sknw.build_sknw(skeleton.astype(np.uint16))
+    graph = graph.to_undirected()
+
+    print(graph)
+
+    _remove_dangling_branches(graph, min_ratio=min_ratio)
+
+    print(graph)
+
+    cycles = nx.cycle_basis(graph)
+    cycles_len = [nx.path_weight(graph, cycle + [cycle[0]], "weight") for cycle in cycles]
+
+    longest_path_length = _longest_path_length(graph)
+    longest_length = np.max(cycles_len + [longest_path_length])
+
+    print(longest_length)
+    print(np.sum(list(nx.get_edge_attributes(graph, "weight").values())))
+
+    return longest_length / np.sum(list(nx.get_edge_attributes(graph, "weight").values()))
+
+
+def _rasterize(boundary, height=1000):
+    minx, miny, maxx, maxy = boundary.bounds
+    poly = shapely.affinity.translate(boundary, -minx, -miny)
+    if maxx - minx > maxy - miny:
+        scale_factor = height / poly.bounds[2]
+    else:
+        scale_factor = height / poly.bounds[3]
+    poly = shapely.affinity.scale(poly, scale_factor, scale_factor, origin=(0, 0, 0))
+    return features.rasterize([poly], out_shape=(height, int(height * (maxx - minx) / (maxy - miny)))), scale_factor
+
+
+def linearity(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "linearity",
+    height: int = 1000,
+    min_ratio: float = 0.05,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    """
+    Compute the linearity of the topological boundaries of sets of cells.
+
+    It rasterizes the polygon and computes the skeleton of the rasterized image.
+    Then, it computes the longest path in the skeleton and divides it by the total length of the skeleton.
+    Branches that are shorter than ``min_ratio`` times the total length of the skeleton are removed because are not considered real branches.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    height
+        Height of the rasterized image. The width is computed automatically to preserve the aspect ratio of the polygon. Higher values lead to more precise results but also higher memory usage.
+    min_ratio
+        Minimum ratio between the length of a branch and the total length of the skeleton to be considered a real branch and not be removed.
+    %(copy)s
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the linearity as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.obs` ``['{{out_key}}']`` - the value of linearity of the cluster associated to every cell.
+    """
+    boundaries = adata.uns[f"boundaries_{cluster_key}"]
+
+    linearities = {}
+    for cluster, boundary in boundaries.items():
+        linearities[cluster] = _linearity(boundary, height=height, min_ratio=min_ratio)
+
+    if copy:
+        return linearities
+    adata.obs[out_key] = adata.obs[cluster_key].map(linearities)
