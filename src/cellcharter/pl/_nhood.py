@@ -223,9 +223,15 @@ def diff_nhood_enrichment(
     axs = [plt.subplot(grid[c]) for c in range(n_combinations)]
 
     for i, (condition1, condition2) in enumerate(combinations(conditions, 2)):
-        nhood_enrichment_values = adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][
-            f"{condition1}_{condition2}"
-        ]
+        if f"{condition1}_{condition2}" not in adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"]:
+            nhood_enrichment_values = adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][
+                f"{condition2}_{condition1}"
+            ]
+            nhood_enrichment_values["enrichment"] = -nhood_enrichment_values["enrichment"]
+        else:
+            nhood_enrichment_values = adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][
+                f"{condition1}_{condition2}"
+            ]
 
         _plot_nhood_enrichment(
             adata,

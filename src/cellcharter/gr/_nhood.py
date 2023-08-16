@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import combinations
 
 import numpy as np
@@ -229,9 +230,10 @@ def _diff_enrichment_permuted(
     library_key: str | None = "library_id",
 ) -> dict:
     adata.obs["condition"] = pd.Categorical(adata.obs[library_key].isin(subsamples_perm).astype(int))
-    return diff_nhood_enrichment(adata, cluster_key=cluster_key, condition_key="condition", pvalues=False, copy=True)[
+    result = diff_nhood_enrichment(adata, cluster_key=cluster_key, condition_key="condition", pvalues=False, copy=True)[
         "0_1"
     ]["enrichment"]
+    return result
 
 
 def diff_nhood_enrichment(
@@ -241,7 +243,7 @@ def diff_nhood_enrichment(
     library_key: str | None = "library_id",
     pvalues: bool = False,
     n_perms: int = 1000,
-    n_jobs: int = -1,
+    n_jobs: int | None = None,
     copy: bool = False,
     **nhood_kwargs,
 ) -> dict | None:
@@ -300,9 +302,11 @@ def diff_nhood_enrichment(
         )["enrichment"]
 
     result = {}
+
     for condition1, condition2 in combinations(conditions, 2):
         observed = enrichments[condition1] - enrichments[condition2]
-        result[f"{condition1}_{condition2}"] = {"enrichment": observed}
+        result_key = f"{condition1}_{condition2}"
+        result[result_key] = {"enrichment": observed}
         if pvalues:
             samples1 = adata[adata.obs[condition_key] == condition1].obs[library_key].unique()
             samples2 = adata[adata.obs[condition_key] == condition2].obs[library_key].unique()
@@ -311,18 +315,30 @@ def diff_nhood_enrichment(
                 np.concatenate((samples1, samples2)), size=(n_perms, len(samples1) + len(samples2))
             )
             adata_perms = adata.copy()
-            expected = Parallel(n_jobs=n_jobs)(
-                delayed(_diff_enrichment_permuted)(
-                    adata_perms,
-                    cluster_key=cluster_key,
-                    subsamples_perm=samples_perm[: len(samples1)],
-                    library_key=library_key,
-                )
-                for samples_perm in tqdm(samples_perms)
-            )
-            expected = np.stack(expected, axis=0)
-            pvalues = _empirical_pvalues(observed, expected)
-            result[f"{condition1}_{condition2}"]["pvalue"] = pvalues
+
+            with tqdm(total=n_perms) as pbar:
+                with ProcessPoolExecutor(max_workers=n_jobs) as executor:
+                    futures = []
+
+                    for samples_perm in samples_perms:
+                        future = executor.submit(
+                            _diff_enrichment_permuted,
+                            adata_perms,
+                            cluster_key=cluster_key,
+                            subsamples_perm=samples_perm[: len(samples1)],
+                            library_key=library_key,
+                        )
+                        futures.append(future)
+
+                    expected = []
+                    for future in as_completed(futures):
+                        expected_permuted = future.result()
+                        expected.append(expected_permuted)
+                        pbar.update(1)
+
+                    expected = np.stack(expected, axis=0)
+                    pvalues = _empirical_pvalues(observed, expected)
+                    result[result_key]["pvalue"] = pvalues
 
     if copy:
         return result
