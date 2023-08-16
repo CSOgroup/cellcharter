@@ -52,7 +52,7 @@ def plot_boundaries(
 
     boundaries = {
         cluster: boundary
-        for cluster, boundary in adata.uns[f"boundaries_{component_key}"].items()
+        for cluster, boundary in adata.uns[f"shape_{component_key}"]["boundary"].items()
         if cluster in clusters
     }
     gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()))
