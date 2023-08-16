@@ -9,7 +9,7 @@ class TestBoundaries:
     def test_boundaries(self, codex_adata: AnnData):
         cc.tl.boundaries(codex_adata)
 
-        boundaries = codex_adata.uns["boundaries_component"]
+        boundaries = codex_adata.uns["shape_component"]["boundary"]
 
         assert isinstance(boundaries, dict)
 
@@ -31,7 +31,7 @@ class TestLinearity:
 
         polygon = Polygon([(0, 0), (0, 10), (2, 10), (2, 0)])
 
-        codex_adata.uns["boundaries_rectangle"] = {1: polygon}
+        codex_adata.uns["shape_rectangle"] = {"boundary": {1: polygon}}
         linearities = cc.tl.linearity(codex_adata, "rectangle", copy=True)
         assert linearities[1] == 1.0
 
@@ -43,7 +43,7 @@ class TestLinearity:
             [(0, 5), (0, 7), (5, 7), (5, 12), (7, 12), (7, 7), (12, 7), (12, 5), (7, 5), (7, 0), (5, 0), (5, 5)]
         )
 
-        codex_adata.uns["boundaries_cross"] = {1: polygon}
+        codex_adata.uns["shape_cross"] = {"boundary": {1: polygon}}
         linearities = cc.tl.linearity(codex_adata, "cross", copy=True)
 
         # The cross is symmetrical, so the linearity should be 0.5
@@ -63,10 +63,10 @@ class TestLinearity:
             [(0, 5), (0, 7), (5, 7), (5, 12), (7, 12), (7, 7), (12, 7), (12, 5), (7, 5), (7, 0), (5, 0), (5, 5)]
         )
 
-        codex_adata.uns["boundaries_cross"] = {1: polygon1}
+        codex_adata.uns["shape_cross"] = {"boundary": {1: polygon1}}
         linearities1 = cc.tl.linearity(codex_adata, "cross", copy=True)
 
-        codex_adata.uns["boundaries_cross"] = {1: polygon2}
+        codex_adata.uns["shape_cross"] = {"boundary": {1: polygon2}}
         linearities2 = cc.tl.linearity(codex_adata, "cross", copy=True)
 
         assert abs(linearities1[1] - linearities2[1]) < 0.01

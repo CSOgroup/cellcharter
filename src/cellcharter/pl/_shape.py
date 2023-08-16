@@ -146,6 +146,8 @@ def plot_shape_metrics(
     """
     if isinstance(metrics, str):
         metrics = [metrics]
+    elif isinstance(metrics, tuple):
+        metrics = list(metrics)
 
     metrics_df = {metric: adata.uns[f"shape_{component_key}"][metric] for metric in metrics}
     metrics_df[condition_key] = (
