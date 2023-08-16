@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
+import scipy.sparse as sps
 from anndata import AnnData
 from scipy.sparse import csr_matrix
 from squidpy._constants._constants import CoordType, Transform
@@ -129,3 +131,80 @@ def remove_intra_cluster_links(
 
     if copy:
         return conns, dists
+
+
+def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 0) -> np.ndarray:
+    n_components, labels = sps.csgraph.connected_components(adj, return_labels=True)
+    components, counts = np.unique(labels, return_counts=True)
+
+    small_components = components[counts < min_cells]
+    small_components_idxs = np.in1d(labels, small_components)
+
+    labels[small_components_idxs] = -1
+    labels[~small_components_idxs] = pd.factorize(labels[~small_components_idxs])[0] + count
+
+    return labels, (n_components - len(small_components))
+
+
+def connected_components(
+    adata: AnnData,
+    cluster_key: str = None,
+    min_cells: int = 250,
+    connectivity_key: str = None,
+    out_key: str = "component",
+    copy: bool = False,
+) -> None | np.ndarray:
+    """
+    Compute the connected components of the spatial graph.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored. If :class:`None`, the connected components are computed on the whole dataset.
+    min_cells
+        Minimum number of cells for a connected component to be considered.
+    %(conn_key)s
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the output matrix is stored if ``copy = False``.
+    %(copy)s
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`numpy.ndarray` with the connected components labels.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.obs` ``['{{out_key}}']`` - - the above mentioned :class:`numpy.ndarray`.
+    """
+    connectivity_key = Key.obsp.spatial_conn(connectivity_key)
+    output = pd.Series(index=adata.obs.index, dtype="object")
+
+    count = 0
+
+    if cluster_key is not None:
+        cluster_values = adata.obs[cluster_key].unique()
+
+        for cluster in cluster_values:
+            adata_cluster = adata[adata.obs[cluster_key] == cluster]
+
+            labels, n_components = _connected_components(
+                adj=adata_cluster.obsp[connectivity_key], min_cells=min_cells, count=count
+            )
+
+            output[adata_cluster.obs.index] = labels
+            count += n_components
+    else:
+        labels, n_components = _connected_components(
+            adj=adata.obsp[connectivity_key],
+            min_cells=min_cells,
+        )
+        output.loc[:] = labels
+
+    output = output.astype("category")
+    output[output == -1] = np.nan
+    output = output.cat.remove_unused_categories()
+
+    if copy:
+        return output.values
+
+    adata.obs[out_key] = output

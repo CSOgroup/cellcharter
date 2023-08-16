@@ -26,6 +26,10 @@ dependencies = [
     # for debug logging (referenced from the issue template)
     "session-info",
     "pycave",
+    "spatialdata",
+    "spatialdata-plot",
+    "rasterio",
+    "sknw",
 ]
 
 [project.optional-dependencies]

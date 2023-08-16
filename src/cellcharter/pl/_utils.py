@@ -14,6 +14,7 @@ from anndata import AnnData
 from matplotlib import colors as mcolors
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.patches import PathPatch
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scanpy.pl._dotplot import DotPlot
 from scipy.cluster import hierarchy as sch
@@ -315,3 +316,32 @@ class MyDotPlot(DotPlot):
     # ToDo: need to find a way to get get_axes()['mainplot_ax'] without showing the plot
     def _rotate_xlabels(self, ax):
         ax = ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="center", minor=False)
+
+
+def adjust_box_widths(g, fac):
+    """Adjust the widths of a seaborn-generated boxplot."""
+    # iterating through Axes instances
+    for ax in g.axes:
+        # iterating through axes artists:
+        for c in ax.get_children():
+            # searching for PathPatches
+            if isinstance(c, PathPatch):
+                # getting current width of box:
+                p = c.get_path()
+                verts = p.vertices
+                verts_sub = verts[:-1]
+                xmin = np.min(verts_sub[:, 0])
+                xmax = np.max(verts_sub[:, 0])
+                xmid = 0.5 * (xmin + xmax)
+                xhalf = 0.5 * (xmax - xmin)
+
+                # setting new width of box
+                xmin_new = xmid - fac * xhalf
+                xmax_new = xmid + fac * xhalf
+                verts_sub[verts_sub[:, 0] == xmin, 0] = xmin_new
+                verts_sub[verts_sub[:, 0] == xmax, 0] = xmax_new
+
+                # setting new width of median line
+                for l in ax.lines:
+                    if np.all(l.get_xdata() == [xmin, xmax]):
+                        l.set_xdata([xmin_new, xmax_new])
