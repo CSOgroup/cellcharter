@@ -135,7 +135,6 @@ def remove_intra_cluster_links(
 
 def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 0) -> np.ndarray:
     n_components, labels = sps.csgraph.connected_components(adj, return_labels=True)
-    print(labels)
     components, counts = np.unique(labels, return_counts=True)
 
     small_components = components[counts < min_cells]

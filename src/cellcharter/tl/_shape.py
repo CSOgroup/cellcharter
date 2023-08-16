@@ -8,6 +8,7 @@ import numpy as np
 import shapely
 import sknw
 from anndata import AnnData
+from matplotlib.path import Path
 from rasterio import features
 from scipy.spatial import Delaunay
 from shapely import geometry
@@ -105,7 +106,7 @@ def boundaries(
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the boundaries as values.
 
     Otherwise, modifies the ``adata`` with the following key:
-        - :attr:`anndata.AnnData.uns` ``['boundaries_{{cluster_key}}']`` - - the above mentioned :class:`dict`.
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['boundaries']`` - the above mentioned :class:`dict`.
     """
     assert 0 <= min_hole_area_ratio <= 1, "min_hole_area_ratio must be between 0 and 1"
     assert alpha_start > 0, "alpha_start must be greater than 0"
@@ -132,7 +133,7 @@ def boundaries(
     if copy:
         return boundaries
 
-    adata.uns[f"boundaries_{cluster_key}"] = boundaries
+    adata.uns[f"shape_{cluster_key}"] = {"boundary": boundaries}
 
 
 def _find_dangling_branches(graph, total_length, min_ratio=0.05):
@@ -209,20 +210,13 @@ def _linearity(boundary, height=1000, min_ratio=0.05):
     graph = sknw.build_sknw(skeleton.astype(np.uint16))
     graph = graph.to_undirected()
 
-    print(graph)
-
     _remove_dangling_branches(graph, min_ratio=min_ratio)
-
-    print(graph)
 
     cycles = nx.cycle_basis(graph)
     cycles_len = [nx.path_weight(graph, cycle + [cycle[0]], "weight") for cycle in cycles]
 
     longest_path_length = _longest_path_length(graph)
     longest_length = np.max(cycles_len + [longest_path_length])
-
-    print(longest_length)
-    print(np.sum(list(nx.get_edge_attributes(graph, "weight").values())))
 
     return longest_length / np.sum(list(nx.get_edge_attributes(graph, "weight").values()))
 
@@ -270,14 +264,181 @@ def linearity(
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the linearity as values.
 
     Otherwise, modifies the ``adata`` with the following key:
-        - :attr:`anndata.AnnData.obs` ``['{{out_key}}']`` - the value of linearity of the cluster associated to every cell.
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
     """
-    boundaries = adata.uns[f"boundaries_{cluster_key}"]
+    boundaries = adata.uns[f"shape_{cluster_key}"]["boundary"]
 
-    linearities = {}
+    linearity_score = {}
     for cluster, boundary in boundaries.items():
-        linearities[cluster] = _linearity(boundary, height=height, min_ratio=min_ratio)
+        linearity_score[cluster] = _linearity(boundary, height=height, min_ratio=min_ratio)
 
     if copy:
-        return linearities
-    adata.obs[out_key] = adata.obs[cluster_key].map(linearities)
+        return linearity_score
+
+    adata.uns[f"shape_{cluster_key}"][out_key] = linearity_score
+
+
+def _elongation(boundary):
+    # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+
+    # calculate the length of each side of the minimum bounding rectangle
+    mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
+
+    # get major/minor axis measurements
+    minor_axis = min(mbr_lengths)
+    major_axis = max(mbr_lengths)
+    return 1 - minor_axis / major_axis
+
+
+def elongation(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "elongation",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    """
+    Compute the elongation of the topological boundaries of sets of cells.
+
+    It computes the minimum bounding rectangle of the polygon and divides the length of the minor axis by the length of the major axis.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    %(copy)s
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the elongation as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
+    """
+    boundaries = adata.uns[f"shape_{cluster_key}"]["boundary"]
+
+    elongation_score = {}
+    for cluster, boundary in boundaries.items():
+        elongation_score[cluster] = _elongation(boundary)
+
+    if copy:
+        return elongation_score
+    adata.uns[f"shape_{cluster_key}"][out_key] = elongation_score
+
+
+def _axes(boundary):
+    # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+    # calculate the length of each side of the minimum bounding rectangle
+    mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
+    return min(mbr_lengths), max(mbr_lengths)
+
+
+def _curl(boundary):
+    factor = boundary.length**2 - 16 * boundary.area
+    if factor < 0:
+        factor = 0
+    fibre_length = boundary.area / ((boundary.length - np.sqrt(factor)) / 4)
+
+    _, length = _axes(boundary)
+    if fibre_length < length:
+        return 0
+    else:
+        return 1 - length / fibre_length
+
+
+def curl(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "curl",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    """
+    Compute the curl score of the topological boundaries of sets of cells.
+
+    It computes the curl score of each cluster as one minues the ratio between the length of the major axis of the minimum bounding rectangle and the fiber length of the polygon.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    %(copy)s
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the curl score as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
+
+    """
+    boundaries = adata.uns[f"shape_{cluster_key}"]["boundary"]
+    curl_score = {}
+    for cluster, boundary in boundaries.items():
+        curl_score[cluster] = _curl(boundary)
+
+    if copy:
+        return curl_score
+    adata.uns[f"shape_{cluster_key}"][out_key] = curl_score
+
+
+def purity(
+    adata: AnnData,
+    cluster_key: str = "component",
+    library_key: str = "sample",
+    out_key: str = "purity",
+    exterior: bool = False,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    """
+    Compute the purity of the topological boundaries of sets of cells.
+
+    It computes the purity of each cluster as the ratio between the number of cells of the cluster that are within the boundary and the total number of cells within the boundary.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    library_key
+        Key in :attr:`anndata.AnnData.obs` where the sample labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    exterior
+        If ``True``, the computation of the purity ignores the polygon's internal holes.
+    %(copy)s
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the purity as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
+    """
+    boundaries = adata.uns[f"shape_{cluster_key}"]["boundary"]
+
+    purity_score = {}
+    for cluster, boundary in boundaries.items():
+        sample = adata[adata.obs[cluster_key] == cluster].obs[library_key][0]
+        adata_sample = adata[adata.obs[library_key] == sample]
+
+        points = adata_sample.obsm["spatial"][:, :2]
+        within_mask = np.zeros(points.shape[0], dtype=bool)
+        if type(boundary) is geometry.multipolygon.MultiPolygon:
+            for p in boundary.geoms:
+                path = Path(np.array(p.exterior.coords.xy).T)
+                within_mask |= np.array(path.contains_points(points))
+        else:
+            path = Path(np.array(boundary.exterior.coords.xy).T)
+            within_mask |= np.array(path.contains_points(points))
+            if not exterior:
+                for interior in boundary.interiors:
+                    path = Path(np.array(interior.coords.xy).T)
+                    within_mask &= ~np.array(path.contains_points(points))
+
+        purity_score[cluster] = np.sum(adata_sample.obs[cluster_key][within_mask] == cluster) / np.sum(within_mask)
+
+    if copy:
+        return purity_score
+    adata.uns[f"shape_{cluster_key}"][out_key] = purity_score
