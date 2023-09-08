@@ -44,28 +44,32 @@ Please refer to the [documentation][link-docs]. In particular, the
 -   [Tutorials][link-tutorial]
 
 ## Installation
-
-1. CellCharter uses Python < 3.11 and [PyTorch](https://pytorch.org) < 2.0.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
-2. Install CellCharter using pip:
+1. Create a conda or pyenv environment
+2. CellCharter uses Python < 3.11 and [PyTorch](https://pytorch.org) < 2.0.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first.
+3. Install the library used for dimensionality reduction and batch effect removal according the data type you are planning to analyze:
+    -   [scVI](https://github.com/scverse/scvi-tools) for spatial transcriptomics and/or epigenomics data such as 10x Visium and Xenium, Nanostring CosMx, Vizgen MERSCOPE, Stereo-seq, DBiT-seq, MERFISH and seqFISH data.
+    -   A modified version of [scArches](https://github.com/theislab/scarches)'s TRVAE model for spatial proteomics data such as Akoya CODEX, Lunaphore COMET, CyCIF, IMC and MIBI-TOF data.
+4. Install CellCharter using pip:
 
 ```bash
 pip install cellcharter
 ```
 
-3. In CellCharter, only the dimensionality reduction and batch correction step is dependent on the data type. In particular, it uses:
+We suggest using `mamba` to install the dependencies.
+Installing the latest version of the dependencies (in particular `scvi-tools` and `spatialdata` may lead to dependency conflicts). 
+However, this should not be a problem because CellCharter doesn't use any of the mismatching features.
 
--   [scVI](https://github.com/scverse/scvi-tools) for spatial transcriptomics data such as 10x Visium and Xenium, Nanostring CosMx, Vizgen MERSCOPE, Stereo-seq, DBiT-seq, MERFISH and seqFISH data.
--   A modified version of [scArches](https://github.com/theislab/scarches)'s TRVAE model for spatial proteomics data such as Akoya CODEX, Lunaphore COMET, CyCIF, IMC and MIBI-TOF data.
-
-We suggest using mamba to install the dependencies.
-One example of installation that uses the GPU and is focused on spatial transcriptomics data is:
+If you want to make sure to avoid conflicts, here is an example of an installation aimed at analyzing spatial transcriptomics data (and thus installing `scvi-tools`).
+The separate installation of `jax` and `jaxlib` is required in case you are using OSX with an M1-M2 chip.
 
 ```bash
-conda create -n cellcharter-env -c conda-forge python=3.10 mamba
+conda create -n cellcharter-env -c conda-forge python=3.10 mamba=1.5.1
 conda activate cellcharter-env
-mamba install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+mamba install pytorch==1.12.1
+mamba install -c conda-forge jax==0.4.14 jaxlib==0.4.14
+pip install chex==0.1.7
+pip install scvi-tools==0.20.3
 pip install cellcharter
-pip install scvi-tools==1.0.3
 ```
 
 ## Contribution
