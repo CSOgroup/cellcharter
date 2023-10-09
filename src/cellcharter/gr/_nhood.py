@@ -240,6 +240,7 @@ def diff_nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
     condition_key: str,
+    condition_groups: tuple[str, str] | None = None,
     library_key: str | None = "library_id",
     pvalues: bool = False,
     n_perms: int = 1000,
@@ -285,7 +286,7 @@ def diff_nhood_enrichment(
     _assert_categorical_obs(adata, key=cluster_key)
     _assert_categorical_obs(adata, key=condition_key)
 
-    conditions = adata.obs[condition_key].cat.categories
+    conditions = adata.obs[condition_key].cat.categories if condition_groups is None else condition_groups
 
     if "observed_expected" in nhood_kwargs:
         warnings.warn(
@@ -303,8 +304,11 @@ def diff_nhood_enrichment(
 
     result = {}
 
-    for condition1, condition2 in combinations(conditions, 2):
+    condition_pairs = combinations(conditions, 2) if condition_groups is None else [condition_groups]
+
+    for condition1, condition2 in condition_pairs:
         observed = enrichments[condition1] - enrichments[condition2]
+        observed = observed.loc[enrichments[condition1].index, enrichments[condition1].columns]
         result_key = f"{condition1}_{condition2}"
         result[result_key] = {"enrichment": observed}
         if pvalues:

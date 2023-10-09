@@ -90,7 +90,9 @@ def nhood_enrichment(
     cluster_key: str,
     row_groups: list[str] | None = None,
     col_groups: list[str] | None = None,
+    min_freq: float | None = None,
     annotate: bool = False,
+    transpose: bool = False,
     method: str | None = None,
     title: str | None = "Neighborhood enrichment",
     cmap: str = "bwr",
@@ -131,9 +133,16 @@ def nhood_enrichment(
     %(plotting_returns)s
     """
     _assert_categorical_obs(adata, key=cluster_key)
-    nhood_enrichment_values = _get_data(adata, cluster_key=cluster_key, func_name="nhood_enrichment")
-    enrichment = nhood_enrichment_values["enrichment"]
-    enrichment[np.isinf(enrichment)] = np.nan
+    nhood_enrichment_values = _get_data(adata, cluster_key=cluster_key, func_name="nhood_enrichment").copy()
+    nhood_enrichment_values["enrichment"][np.isinf(nhood_enrichment_values["enrichment"])] = np.nan
+
+    if transpose:
+        nhood_enrichment_values["enrichment"] = nhood_enrichment_values["enrichment"].T
+
+    if min_freq is not None:
+        frequency = adata.obs[cluster_key].value_counts(normalize=True)
+        nhood_enrichment_values["enrichment"].loc[frequency[frequency < min_freq].index] = np.nan
+        nhood_enrichment_values["enrichment"].loc[:, frequency[frequency < min_freq].index] = np.nan
 
     _plot_nhood_enrichment(
         adata,
