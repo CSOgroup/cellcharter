@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/scverse/cookiecutter-scverse",
-  "commit": "605f95714130c960bce12eab98a4e023e8932249",
-  "checkout": "v0.2.22",
+  "commit": "765c25c838914413dd1aee3d7ae37357d890d0de",
+  "checkout": "v0.3.0",
   "context": {
     "cookiecutter": {
       "project_name": "cellcharter",
@@ -16,6 +16,11 @@
         ".github/workflows/**.yaml",
         "docs/_templates/autosummary/**.rst"
       ],
+      "_render_devdocs": false,
+      "_jinja2_env_vars": {
+        "lstrip_blocks": true,
+        "trim_blocks": true
+      },
       "_template": "https://github.com/scverse/cookiecutter-scverse"
     }
   },
