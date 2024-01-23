@@ -1,6 +1,6 @@
 # Contributing guide
 
-Scanpy provides extensive [developer documentation][scanpy developer guide], most of which applies to this repo, too.
+Scanpy provides extensive [developer documentation][scanpy developer guide], most of which applies to this project, too.
 This document will not reproduce the entire content from there. Instead, it aims at summarizing the most important
 information to get you started on contributing.
 
@@ -19,9 +19,8 @@ pip install -e ".[dev,test,doc]"
 
 ## Code-style
 
-This template uses [pre-commit][] to enforce consistent code-styles. On every commit, pre-commit checks will either
-automatically fix issues with the code, or raise an error message. See [pre-commit checks](template_usage.md#pre-commit-checks) for
-a full list of checks enabled for this repository.
+This package uses [pre-commit][] to enforce consistent code-styles.
+On every commit, pre-commit checks will either automatically fix issues with the code, or raise an error message.
 
 To enable pre-commit locally, simply run
 
@@ -43,10 +42,10 @@ git pull --rebase
 to integrate the changes into yours.
 While the [pre-commit.ci][] is useful, we strongly encourage installing and running pre-commit locally first to understand its usage.
 
-Finally, most editors have an _autoformat on save_ feature. Consider enabling this option for [black][black-editors]
+Finally, most editors have an _autoformat on save_ feature. Consider enabling this option for [ruff][ruff-editors]
 and [prettier][prettier-editors].
 
-[black-editors]: https://black.readthedocs.io/en/stable/integrations/editors.html
+[ruff-editors]: https://docs.astral.sh/ruff/integrations/
 [prettier-editors]: https://prettier.io/docs/en/editors.html
 
 ## Writing tests
@@ -65,7 +64,17 @@ command line by executing
 pytest
 ```
 
-in the root of the repository. Continuous integration will automatically run the tests on all pull requests.
+in the root of the repository.
+
+### Continuous integration
+
+Continuous integration will automatically run the tests on all pull requests and test
+against the minimum and maximum supported Python version.
+
+Additionally, there's a CI job that tests against pre-releases of all dependencies
+(if there are any). The purpose of this check is to detect incompatibilities
+of new package versions early on and gives you time to fix the issue or reach
+out to the developers of the dependency before the package is released to a wider audience.
 
 [scanpy-test-docs]: https://scanpy.readthedocs.io/en/latest/dev/testing.html#writing-tests
 
@@ -83,55 +92,8 @@ Before making a release, you need to update the version number in the `pyproject
 >
 > Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format.
 
-Once you are done, run
-
-```
-git push --tags
-```
-
-to publish the created tag on GitHub. Alternatively, it is possible to create a tag through the Github web interface. For more information, see [managing Github releases][]. This will automatically trigger a Github workflow that creates a release on PyPI.
-
-### The release Github workflow
-
-#### Behind the scenes
-
-This section explains how releases can be created manually purely for educational purposes. Experienced developers may skip this section.
-Python packages are not distributed as source code, but as _distributions_. The most common distribution format is the so-called _wheel_. To build a _wheel_, run
-
-```bash
-python -m build
-```
-
-This command creates a _source archive_ and a _wheel_, which are required for publishing your package to [PyPI][]. These files are created directly in the root of the repository.
-
-Before uploading them to [PyPI][] you can check that your _distribution_ is valid by running:
-
-```bash
-twine check dist/*
-```
-
-and finally publishing it with:
-
-```bash
-twine upload dist/*
-```
-
-Provide your username and password when requested and then go check out your package on [PyPI][]!
-
-For more information, follow the [Python packaging tutorial][].
-
-#### Configuring the Github workflow
-
-Tags adhering to `"*.*.*"` that are pushed to the `main` branch will trigger the release Github workflow that automatically builds and uploads the Python package to [PyPI][].
-For this to work, the `PYPI_API_TOKEN` Github secret needs to be set to the value of the [PyPI][] token.
-See [Creating PyPI tokens][] for instructions on how to create a [PyPI][] token.
-Finally, set your `PYPI_API_TOKEN` Github secret equal to the value of the just created [PyPI][] token by following [creating Github secrets][].
-
-[creating github secrets]: https://docs.github.com/en/actions/security-guides/encrypted-secrets
-[creating pypi tokens]: https://pypi.org/help/#apitoken
-[managing github releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
-[python packaging tutorial]: https://packaging.python.org/en/latest/tutorials/packaging-projects/#generating-distribution-archives
-[pypi-feature-request]: https://github.com/scverse/cookiecutter-scverse/issues/88
+Once you are done, commit and push your changes and navigate to the "Releases" page of this project on GitHub.
+Specify `vX.X.X` as a tag name and create a release. For more information, see [managing Github releases][]. This will automatically create a git tag and trigger a Github workflow that creates a release on PyPI.
 
 ## Writing documentation
 

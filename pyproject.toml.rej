@@ -1,33 +1,14 @@
 diff a/pyproject.toml b/pyproject.toml	(rejected hunks)
-@@ -7,7 +7,7 @@ name = "cellcharter"
- version = "0.0.1"
- description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
- readme = "README.md"
--requires-python = ">=3.8"
-+requires-python = ">=3.9"
- license = {file = "LICENSE"}
- authors = [
-     {name = "Marco Varrone"},
-@@ -62,12 +63,10 @@ addopts = [
+@@ -42,10 +41,11 @@ doc = [
+     "ipykernel",
+     "ipython",
+     "sphinx-copybutton",
++    "pandas",
+ ]
+ test = [
+     "pytest",
+-    "pytest-cov",
++    "coverage",
+ ]
  
- [tool.black]
- line-length = 120
--target-version = ["py38"]
- 
- [tool.ruff]
- src = ["src"]
- line-length = 120
--target-version = "py38"
- select = [
-     "F",  # Errors detected by Pyflakes
-     "E",  # Error detected by Pycodestyle
-@@ -117,9 +116,6 @@ convention = "numpy"
- "tests/*" = ["D"]
- "*/__init__.py" = ["F401"]
- 
--[tool.jupytext]
--formats = "ipynb,md"
--
- [tool.cruft]
- skip = [
-     "tests",
+ [tool.coverage.run]
