@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from itertools import combinations
+from pathlib import Path
 
 import anndata as ad
 import geopandas
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,6 +24,7 @@ def plot_boundaries(
     component_key: str = "component",
     alpha_boundary: float = 0.5,
     show_cells: bool = True,
+    save: str | Path | None = None,
 ) -> None:
     """
     Plot the boundaries of the clusters.
@@ -91,19 +92,30 @@ def plot_boundaries(
 
     ax = plt.gca()
     if show_cells:
-        sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=False)
-    else:
-        sdata.table.uns[f"{component_key}_colors"] = _get_colors_for_categorical_obs(
-            adata.obs["component"].cat.categories
-        )
+        # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
+        sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+    sdata.table.uns[f"{component_key}_colors"] = _get_colors_for_categorical_obs(
+        adata.obs[component_key].cat.categories
+    )
+
+    # Groups in spatialdata needs to be string
+    # However, this often gives ordering problems if the labels names are numbers
+    # So I transform it into strings but keep the order as if they where numbers
+    # TODO: ask spatialdata-plot to support integers in categorical format
+    groups = sdata.table.obs[component_key].cat.categories.astype(str)
+    sdata.table.obs[component_key] = sdata.table.obs[component_key].astype(str).astype("category")
+    sdata.table.obs[component_key] = sdata.table.obs[component_key].cat.set_categories(groups)
 
     sdata.pl.render_shapes(
         elements="clusters",
         color=component_key,
+        groups=list(groups),
         fill_alpha=alpha_boundary,
-        palette=mpl.colors.ListedColormap(sdata.table.uns[f"{component_key}_colors"]),
+        palette=sdata.table.uns[f"{component_key}_colors"],
     ).pl.show(ax=ax)
-    plt.show()
+
+    if save is not None:
+        plt.savefig(save, bbox_inches="tight")
 
 
 def plot_shape_metrics(
