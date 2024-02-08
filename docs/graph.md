@@ -8,6 +8,7 @@
     :toctree: generated
 
     gr.aggregate_neighbors
+    gr.connected_components
     gr.nhood_enrichment
     gr.remove_long_links
     gr.remove_intra_cluster_links
