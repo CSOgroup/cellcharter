@@ -233,9 +233,9 @@ def diff_nhood_enrichment(
 
     for i, (condition1, condition2) in enumerate(combinations(conditions, 2)):
         if f"{condition1}_{condition2}" not in adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"]:
-            nhood_enrichment_values = adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][
-                f"{condition2}_{condition1}"
-            ]
+            nhood_enrichment_values = dict(
+                adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][f"{condition2}_{condition1}"]
+            )
             nhood_enrichment_values["enrichment"] = -nhood_enrichment_values["enrichment"]
         else:
             nhood_enrichment_values = adata.uns[f"{cluster_key}_{condition_key}_diff_nhood_enrichment"][
