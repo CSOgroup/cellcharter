@@ -92,7 +92,6 @@ else:
             use_bn: bool = False,
             use_ln: bool = True,
         ):
-
             self.adata = adata
 
             self.condition_key_ = condition_key
@@ -121,7 +120,7 @@ else:
             self.model = trVAE(
                 self.input_dim_,
                 self.conditions_,
-                self.hidden_layer_sizes_,
+                list(self.hidden_layer_sizes_),
                 self.latent_dim_,
                 self.dr_rate_,
                 self.use_mmd_,
