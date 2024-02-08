@@ -9,7 +9,7 @@
   <a href="https://cellcharter.readthedocs.io/en/latest/" target="_blank">Documentation</a> •
   <a href="https://cellcharter.readthedocs.io/en/latest/notebooks/codex_mouse_spleen.html" target="_blank">Examples</a> •
   <a href="https://doi.org/10.1038/s41588-023-01588-4" target="_blank">Paper</a> •
-  <a href="https://www.biorxiv.org/content/10.1101/2023.01.10.523386v1" target="_blank">Preprint</a>
+  <a href="https://www.biorxiv.org/content/10.1101/2023.01.10.523386v2" target="_blank">Preprint</a>
 </p>
 
 [![Tests][badge-tests]][link-tests]
