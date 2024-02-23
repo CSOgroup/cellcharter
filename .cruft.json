@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/scverse/cookiecutter-scverse",
-  "commit": "765c25c838914413dd1aee3d7ae37357d890d0de",
-  "checkout": "v0.3.0",
+  "commit": "586b1652162ff7994b0070a034023d64289ae416",
+  "checkout": "v0.3.1",
   "context": {
     "cookiecutter": {
       "project_name": "cellcharter",
@@ -13,7 +13,8 @@
       "project_repo": "https://github.com/marcovarrone/cellcharter",
       "license": "BSD 3-Clause License",
       "_copy_without_render": [
-        ".github/workflows/**.yaml",
+        ".github/workflows/build.yaml",
+        ".github/workflows/test.yaml",
         "docs/_templates/autosummary/**.rst"
       ],
       "_render_devdocs": false,
