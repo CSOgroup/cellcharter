@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from anndata import AnnData
+from squidpy._docs import d
 
 
 def _proportion(adata, id_key, val_key, normalize=True):
@@ -24,6 +25,7 @@ def _enrichment(observed, expected, log=True):
     return enrichment
 
 
+@d.dedent
 def enrichment(
     adata: AnnData,
     group_key: str,
@@ -56,8 +58,8 @@ def enrichment(
         - ``'expected'`` - the expected proportions (if `observed_expected is True`).
 
     Otherwise, modifies the ``adata`` with the following keys:
-        - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']`` - the above mentioned dict.
-        - :attr:`anndata.AnnData.uns` ``['{cluster_key}_nhood_enrichment']['params']`` - the parameters used.
+        - :attr:`anndata.AnnData.uns` ``['{group_key}_{label_key}_nhood_enrichment']`` - the above mentioned dict.
+        - :attr:`anndata.AnnData.uns` ``['{group_key}_{label_key}_nhood_enrichment']['params']`` - the parameters used.
     """
     observed = _proportion(adata, id_key=label_key, val_key=group_key).reindex().T
     observed[observed.isna()] = 0

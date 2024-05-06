@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from itertools import combinations
 from pathlib import Path
 
@@ -13,11 +14,60 @@ import spatialdata as sd
 from anndata import AnnData
 from scipy.stats import ttest_ind
 from spatialdata_plot.pl.utils import _get_colors_for_categorical_obs
+from squidpy._docs import d
 
 from ._utils import adjust_box_widths
 
 
 def plot_boundaries(
+    adata: AnnData,
+    sample: str,
+    library_key: str = "sample",
+    component_key: str = "component",
+    alpha_boundary: float = 0.5,
+    show_cells: bool = True,
+    save: str | Path | None = None,
+) -> None:
+    """
+    Plot the boundaries of the clusters.
+
+    Parameters
+    ----------
+    %(adata)s
+    sample
+        Sample to plot.
+    library_key
+        Key in :attr:`anndata.AnnData.obs` where the sample labels are stored.
+    component_key
+        Key in :attr:`anndata.AnnData.obs` where the component labels are stored.
+    alpha_boundary
+        Transparency of the boundaries.
+    show_cells
+        Whether to show the cells or not.
+
+    Returns
+    -------
+    %(plotting_returns)s
+    """
+    # Print warning and call boundaries
+    warnings.warn(
+        "plot_boundaries is deprecated and will be removed in the next release. " "Please use `boundaries` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    boundaries(
+        adata=adata,
+        sample=sample,
+        library_key=library_key,
+        component_key=component_key,
+        alpha_boundary=alpha_boundary,
+        show_cells=show_cells,
+        save=save,
+    )
+
+
+@d.dedent
+def boundaries(
     adata: AnnData,
     sample: str,
     library_key: str = "sample",
@@ -119,6 +169,65 @@ def plot_boundaries(
 
 
 def plot_shape_metrics(
+    adata: AnnData,
+    condition_key: str,
+    condition_groups: list[str] | None = None,
+    cluster_key: str | None = None,
+    cluster_id: list[str] | None = None,
+    component_key: str = "component",
+    metrics: str | tuple[str] | list[str] = ("linearity", "curl"),
+    figsize: tuple[float, float] = (8, 7),
+    title: str | None = None,
+) -> None:
+    """
+    Boxplots of the shape metrics between two conditions.
+
+    Parameters
+    ----------
+    %(adata)s
+    condition_key
+        Key in :attr:`anndata.AnnData.obs` where the condition labels are stored.
+    condition_groups
+        List of two conditions to compare. If None, all pairwise comparisons are made.
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored. This is used to filter the clusters to plot.
+    cluster_id
+        List of clusters to plot. If None, all clusters are plotted.
+    component_key
+        Key in :attr:`anndata.AnnData.obs` where the component labels are stored.
+    metrics
+        List of metrics to plot. Available metrics are ``linearity``, ``curl``, ``elongation``, ``purity``.
+    figsize
+        Figure size.
+    title
+        Title of the plot.
+
+    Returns
+    -------
+    %(plotting_returns)s
+    """
+    # Print warning and call shape_metrics
+    warnings.warn(
+        "plot_shape_metrics is deprecated and will be removed in the next release. "
+        "Please use `shape_metrics` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    shape_metrics(
+        adata=adata,
+        condition_key=condition_key,
+        condition_groups=condition_groups,
+        cluster_key=cluster_key,
+        cluster_id=cluster_id,
+        component_key=component_key,
+        metrics=metrics,
+        figsize=figsize,
+        title=title,
+    )
+
+
+@d.dedent
+def shape_metrics(
     adata: AnnData,
     condition_key: str,
     condition_groups: list[str] | None = None,

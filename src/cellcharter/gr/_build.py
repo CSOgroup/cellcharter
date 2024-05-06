@@ -5,13 +5,12 @@ import pandas as pd
 import scipy.sparse as sps
 from anndata import AnnData
 from scipy.sparse import csr_matrix
-from squidpy._constants._constants import CoordType, Transform
 from squidpy._constants._pkg_constants import Key
-from squidpy._docs import inject_docs
+from squidpy._docs import d
 from squidpy.gr._utils import _assert_connectivity_key
 
 
-@inject_docs(t=Transform, c=CoordType)
+@d.dedent
 def remove_long_links(
     adata: AnnData,
     distance_percentile: float = 99.0,
@@ -75,6 +74,7 @@ def remove_long_links(
         adata.uns[neighs_key]["params"]["radius"] = threshold
 
 
+@d.dedent
 def remove_intra_cluster_links(
     adata: AnnData,
     cluster_key: str,
@@ -118,6 +118,7 @@ def remove_intra_cluster_links(
     conns = adata.obsp[connectivity_key].copy() if copy else adata.obsp[connectivity_key]
     dists = adata.obsp[distances_key].copy() if copy else adata.obsp[distances_key]
 
+    # ToDo: compute inter_cluster_mask only on conns and apply mask to both matrices
     for matrix in [conns, dists]:
         target_clusters = np.array(adata.obs[cluster_key][matrix.indices])
         source_clusters = np.array(
@@ -146,6 +147,7 @@ def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 
     return labels, (n_components - len(small_components))
 
 
+@d.dedent
 def connected_components(
     adata: AnnData,
     cluster_key: str = None,
