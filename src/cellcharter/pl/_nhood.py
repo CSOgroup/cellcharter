@@ -12,6 +12,7 @@ import pandas as pd
 from anndata import AnnData
 from matplotlib import rcParams
 from matplotlib.axes import Axes
+from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _maybe_set_colors
 from squidpy.pl._graph import _get_data
@@ -85,6 +86,7 @@ def _plot_nhood_enrichment(
     )
 
 
+@d.dedent
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
@@ -168,6 +170,7 @@ def nhood_enrichment(
         plt.savefig(save, bbox_inches="tight")
 
 
+@d.dedent
 def diff_nhood_enrichment(
     adata: AnnData,
     cluster_key: str,

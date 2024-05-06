@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from anndata import AnnData
+from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _get_palette, _maybe_set_colors
 
@@ -18,6 +19,7 @@ from cellcharter.gr._group import _proportion
 from cellcharter.pl._utils import _dotplot
 
 
+@d.dedent
 def proportion(
     adata: AnnData,
     group_key: str,
@@ -90,6 +92,7 @@ def proportion(
         plt.savefig(save, bbox_extra_artists=(lgd, lgd), bbox_inches="tight")
 
 
+@d.dedent
 def enrichment(
     adata: AnnData,
     group_key: str,

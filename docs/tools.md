@@ -7,6 +7,11 @@
 .. autosummary::
     :toctree: generated
 
+    tl.boundaries
     tl.Cluster
     tl.ClusterAutoK
+    tl.curl
+    tl.elongation
+    tl.linearity
+    tl.purity
 ```

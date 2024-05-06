@@ -14,6 +14,7 @@ from scipy.spatial import Delaunay
 from shapely import geometry
 from shapely.ops import polygonize, unary_union
 from skimage.morphology import skeletonize
+from squidpy._docs import d
 
 
 def _alpha_shape(coords, alpha):
@@ -81,6 +82,7 @@ def _process_component(points, component, hole_area_ratio=0.1, alpha_start=2000)
     return component, boundary
 
 
+@d.dedent
 def boundaries(
     adata: AnnData,
     cluster_key: str = "component",
@@ -232,6 +234,7 @@ def _rasterize(boundary, height=1000):
     return features.rasterize([poly], out_shape=(height, int(height * (maxx - minx) / (maxy - miny)))), scale_factor
 
 
+@d.dedent
 def linearity(
     adata: AnnData,
     cluster_key: str = "component",
@@ -291,6 +294,7 @@ def _elongation(boundary):
     return 1 - minor_axis / major_axis
 
 
+@d.dedent
 def elongation(
     adata: AnnData,
     cluster_key: str = "component",
@@ -349,6 +353,7 @@ def _curl(boundary):
         return 1 - length / fibre_length
 
 
+@d.dedent
 def curl(
     adata: AnnData,
     cluster_key: str = "component",
@@ -384,6 +389,7 @@ def curl(
     adata.uns[f"shape_{cluster_key}"][out_key] = curl_score
 
 
+@d.dedent
 def purity(
     adata: AnnData,
     cluster_key: str = "component",

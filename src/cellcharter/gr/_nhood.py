@@ -9,6 +9,7 @@ import pandas as pd
 from anndata import AnnData
 from joblib import Parallel, delayed
 from squidpy._constants._pkg_constants import Key
+from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs, _assert_connectivity_key
 from tqdm.auto import tqdm
 
@@ -133,6 +134,7 @@ def _nhood_enrichment(
     return result
 
 
+@d.dedent
 def nhood_enrichment(
     adata: AnnData,
     cluster_key: str,
@@ -236,6 +238,7 @@ def _diff_enrichment_permuted(
     return result
 
 
+@d.dedent
 def diff_nhood_enrichment(
     adata: AnnData,
     cluster_key: str,

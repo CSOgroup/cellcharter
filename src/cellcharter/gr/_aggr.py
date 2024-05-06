@@ -8,6 +8,7 @@ import scipy.sparse as sps
 from anndata import AnnData
 from scipy.sparse import spdiags
 from squidpy._constants._pkg_constants import Key as sqKey
+from squidpy._docs import d
 from tqdm.auto import tqdm
 
 from cellcharter._constants._pkg_constants import Key
@@ -76,7 +77,6 @@ def _aggregate_neighbors(
     aggregations: Optional[Union[str, list]] = "mean",
     disable_tqdm: bool = True,
 ) -> np.ndarray:
-
     adj = adj.astype(bool)
     adj = _setdiag(adj, 0)
     adj_hop = adj.copy()
@@ -84,7 +84,6 @@ def _aggregate_neighbors(
 
     Xs = []
     for i in tqdm(range(0, max(nhood_layers) + 1), disable=disable_tqdm):
-
         if i in nhood_layers:
             if i == 0:
                 Xs.append(X)
@@ -102,6 +101,7 @@ def _aggregate_neighbors(
         return np.hstack(Xs)
 
 
+@d.dedent
 def aggregate_neighbors(
     adata: AnnData,
     n_layers: Union[int, list],
