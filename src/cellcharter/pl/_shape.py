@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import spatialdata as sd
+import spatialdata_plot  # noqa: F401
 from anndata import AnnData
 from scipy.stats import ttest_ind
 from squidpy._docs import d
