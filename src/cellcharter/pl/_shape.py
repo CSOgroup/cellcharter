@@ -140,13 +140,11 @@ def boundaries(
     ax = plt.gca()
     if show_cells:
         # TODO: remove after spatialdata-plot issue  #256 is fixed
-        try:
-            # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
-            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
-        except TypeError:
-            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
-            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
-            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+        sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
+        sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
+
+        # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
+        sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
 
     sdata.pl.render_shapes(
         elements="clusters",
