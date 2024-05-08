@@ -13,7 +13,6 @@ import seaborn as sns
 import spatialdata as sd
 from anndata import AnnData
 from scipy.stats import ttest_ind
-from spatialdata_plot.pl.utils import _get_colors_for_categorical_obs
 from squidpy._docs import d
 
 from ._utils import adjust_box_widths
@@ -107,7 +106,6 @@ def boundaries(
         if cluster in clusters
     }
     gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()))
-    # adata.obs[cluster_key] = pd.Categorical(adata.obs[cluster_key])
     adata.obs.loc[adata.obs[component_key] == -1, component_key] = np.nan
     adata.obs.index = "cell_" + adata.obs.index
     adata.obs["instance_id"] = adata.obs.index
@@ -126,7 +124,6 @@ def boundaries(
     adata = ad.concat((adata, adata_obs), join="outer")
 
     adata.obs["region"] = adata.obs["region"].astype("category")
-    adata.obs[component_key] = adata.obs[component_key].astype("category")
 
     table = sd.models.TableModel.parse(
         adata, region_key="region", region=["clusters", "cells"], instance_key="instance_id"
@@ -136,32 +133,24 @@ def boundaries(
         "clusters": sd.models.ShapesModel.parse(gdf),
         "cells": sd.models.ShapesModel.parse(cell_circles),
     }
-    adata.obs["instance_id"] = pd.Categorical(adata.obs["instance_id"])
 
     sdata = sd.SpatialData(shapes=shapes, table=table)
 
     ax = plt.gca()
     if show_cells:
-        # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
-        sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
-    sdata.table.uns[f"{component_key}_colors"] = _get_colors_for_categorical_obs(
-        adata.obs[component_key].cat.categories
-    )
-
-    # Groups in spatialdata needs to be string
-    # However, this often gives ordering problems if the labels names are numbers
-    # So I transform it into strings but keep the order as if they where numbers
-    # TODO: ask spatialdata-plot to support integers in categorical format
-    groups = sdata.table.obs[component_key].cat.categories.astype(str)
-    sdata.table.obs[component_key] = sdata.table.obs[component_key].astype(str).astype("category")
-    sdata.table.obs[component_key] = sdata.table.obs[component_key].cat.set_categories(groups)
+        # TODO: remove after spatialdata-plot issue  #256 is fixed
+        try:
+            # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
+            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+        except TypeError:
+            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
+            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
+            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
 
     sdata.pl.render_shapes(
         elements="clusters",
         color=component_key,
-        groups=list(groups),
         fill_alpha=alpha_boundary,
-        palette=sdata.table.uns[f"{component_key}_colors"],
     ).pl.show(ax=ax)
 
     if save is not None:
