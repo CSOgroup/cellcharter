@@ -11,9 +11,9 @@ from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _get_palette, _maybe_set_colors
 
 try:
-    from matplotlib import colormaps as cm
+    from matplotlib.colormaps import get_cmap
 except ImportError:
-    from matplotlib import cm
+    from matplotlib.pyplot import get_cmap
 
 from cellcharter.gr._group import _proportion
 from cellcharter.pl._utils import _dotplot
@@ -146,7 +146,7 @@ def enrichment(
 
     if palette is None:
         palette = matplotlib.colors.LinearSegmentedColormap.from_list(
-            "", [cm.get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), cm.get_cmap("coolwarm")(255)]
+            "", [get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), get_cmap("coolwarm")(255)]
         )
 
     enrichment = adata.uns[f"{group_key}_{label_key}_enrichment"]["enrichment"]
