@@ -1,18 +1,16 @@
 diff a/docs/conf.py b/docs/conf.py	(rejected hunks)
-@@ -16,12 +16,15 @@ sys.path.insert(0, str(HERE / "extensions"))
+@@ -36,10 +36,10 @@ needs_sphinx = "4.0"
  
- # -- Project information -----------------------------------------------------
+ html_context = {
+     "display_github": True,  # Integrate GitHub
+-    "github_user": "marcovarrone",  # Username
+-    "github_repo": project_name,  # Repo name
+-    "github_version": "main",  # Version
+-    "conf_py_path": "/docs/",  # Path in the checkout to the docs root
++    "github_user": "marcovarrone",
++    "github_repo": "https://github.com/marcovarrone/cellcharter",
++    "github_version": "main",
++    "conf_py_path": "/docs/",
+ }
  
-+# NOTE: If you installed your project in editable mode, this might be stale.
-+#       If this is the case, reinstall it to refresh the metadata
- info = metadata("cellcharter")
- project_name = info["Name"]
- author = info["Author"]
- copyright = f"{datetime.now():%Y}, {author}."
- version = info["Version"]
--repository_url = f"https://github.com/marcovarrone/{project_name}"
-+urls = dict(pu.split(", ") for pu in info.get_all("Project-URL"))
-+repository_url = urls["Source"]
- 
- # The full version, including alpha/beta/rc tags
- release = info["Version"]
+ # -- General configuration ---------------------------------------------------
