@@ -35,6 +35,7 @@ dependencies = [
     "spatialdata-plot",
     "rasterio",
     "sknw",
+    "matplotlib < 3.9.0",
 ]
 
 [project.optional-dependencies]
