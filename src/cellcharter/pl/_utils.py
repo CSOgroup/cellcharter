@@ -21,6 +21,11 @@ from scipy.cluster import hierarchy as sch
 from squidpy._constants._pkg_constants import Key
 from squidpy.pl._color_utils import Palette_t
 
+try:
+    from matplotlib import colormaps as cm
+except ImportError:
+    from matplotlib import cm
+
 
 def _get_cmap_norm(
     adata: AnnData,
@@ -106,7 +111,7 @@ def _heatmap(
     vmax = kwargs.pop("vmax", np.nanmax(data))
     vcenter = kwargs.pop("vcenter", 0)
     norm = mpl.colors.TwoSlopeNorm(vcenter=vcenter, vmin=vmin, vmax=vmax)
-    cont_cmap = copy(plt.get_cmap(cont_cmap))
+    cont_cmap = copy(cm.get_cmap(cont_cmap))
     cont_cmap.set_bad(color="grey")
 
     annot = np.round(data[::-1], n_digits).astype(str) if annotate else None
