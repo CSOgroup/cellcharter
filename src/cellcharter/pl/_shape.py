@@ -139,12 +139,16 @@ def boundaries(
 
     ax = plt.gca()
     if show_cells:
-        # TODO: remove after spatialdata-plot issue  #256 is fixed
-        sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
-        sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
-
-        # TODO: spatialdata-plot doesn't support legend_loc=False to make the legend disappear.
-        sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+        try:
+            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+        except TypeError:  # TODO: remove after spatialdata-plot issue  #256 is fixed
+            warnings.warn(
+                "Until the next spatialdata_plot release, the cells that do not belong to any component will be displayed with a random color instead of grey.",
+                stacklevel=2,
+            )
+            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
+            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
+            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
 
     sdata.pl.render_shapes(
         elements="clusters",
