@@ -32,7 +32,7 @@ dependencies = [
     "session-info",
     "pycave",
     "spatialdata",
-    "spatialdata-plot",
+    "spatialdata-plot >= 0.1.0",
     "rasterio",
     "sknw",
     "matplotlib < 3.9.0",
