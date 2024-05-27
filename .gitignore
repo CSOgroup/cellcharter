@@ -29,3 +29,9 @@ __pycache__/
 /.vscode/
 
 docs/notebooks/tutorial_data
+docs/jupyter_execute
+
+.ipynb_checkpoints
+*.ipynb
+
+trash
