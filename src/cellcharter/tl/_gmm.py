@@ -6,6 +6,7 @@ from typing import List, Tuple, cast
 import anndata as ad
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 import torch
 from lightkit.data import DataLoader, TensorLike, collate_tensor, dataset_from_tensors
 from pycave import set_logging_level
@@ -103,6 +104,11 @@ class GaussianMixture(PyCaveGaussianMixture):
         ----------
             The fitted Gaussian mixture.
         """
+        if sps.issparse(data):
+            raise ValueError(
+                "Sparse data is not supported. You may have forgotten to reduce the dimensionality of the data. Otherwise, please convert the data to a dense format."
+            )
+
         if self.init_strategy == "sklearn":
             if self.batch_size is None:
                 kmeans = KMeans(n_clusters=self.num_components, random_state=self.random_state, n_init=1)
