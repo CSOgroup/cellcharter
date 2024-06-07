@@ -25,8 +25,8 @@ class TestRemoveLongLinks:
         sq.gr.spatial_neighbors(non_visium_adata, coord_type="generic", delaunay=True)
         cc.gr.remove_long_links(non_visium_adata, distance_percentile=50)
 
-        spatial_graph = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
-        spatial_dist = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
+        spatial_graph = non_visium_adata.obsp[Key.obsp.spatial_conn()].toarray()
+        spatial_dist = non_visium_adata.obsp[Key.obsp.spatial_dist()].toarray()
 
         np.testing.assert_array_equal(spatial_graph, correct_graph_perc)
         np.testing.assert_allclose(spatial_dist, correct_dist_perc)
@@ -47,8 +47,8 @@ class TestRemoveIntraClusterLinks:
 
         cc.gr.remove_intra_cluster_links(non_visium_adata, cluster_key="cluster")
 
-        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
-        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
+        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].toarray()
+        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].toarray()
 
         np.testing.assert_array_equal(trimmed_conns, correct_conns)
         np.testing.assert_allclose(trimmed_dists, correct_dists)
@@ -67,8 +67,8 @@ class TestRemoveIntraClusterLinks:
 
         cc.gr.remove_intra_cluster_links(non_visium_adata, cluster_key="cluster")
 
-        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
-        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
+        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].toarray()
+        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].toarray()
 
         np.testing.assert_array_equal(trimmed_conns, correct_conns)
         np.testing.assert_allclose(trimmed_dists, correct_dists)
@@ -88,11 +88,11 @@ class TestRemoveIntraClusterLinks:
 
         cc.gr.remove_intra_cluster_links(non_visium_adata, cluster_key="cluster")
 
-        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
-        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
+        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].toarray()
+        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].toarray()
 
-        np.testing.assert_array_equal(trimmed_conns, correct_conns.A)
-        np.testing.assert_allclose(trimmed_dists, correct_dists.A)
+        np.testing.assert_array_equal(trimmed_conns, correct_conns.toarray())
+        np.testing.assert_allclose(trimmed_dists, correct_dists.toarray())
 
     def test_copy(self, non_visium_adata: AnnData):
         non_visium_adata.obsp[Key.obsp.spatial_conn()] = sps.csr_matrix(
@@ -108,11 +108,11 @@ class TestRemoveIntraClusterLinks:
 
         cc.gr.remove_intra_cluster_links(non_visium_adata, cluster_key="cluster", copy=True)
 
-        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].A
-        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].A
+        trimmed_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].toarray()
+        trimmed_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].toarray()
 
-        np.testing.assert_array_equal(trimmed_conns, correct_conns.A)
-        np.testing.assert_allclose(trimmed_dists, correct_dists.A)
+        np.testing.assert_array_equal(trimmed_conns, correct_conns.toarray())
+        np.testing.assert_allclose(trimmed_dists, correct_dists.toarray())
 
 
 class TestConnectedComponents:
