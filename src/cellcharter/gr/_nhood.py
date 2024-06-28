@@ -344,8 +344,8 @@ def diff_nhood_enrichment(
                         pbar.update(1)
 
                     expected = np.stack(expected, axis=0)
-                    pvalues = _empirical_pvalues(observed, expected)
-                    result[result_key]["pvalue"] = pvalues
+                    tmp_pvalues = _empirical_pvalues(observed, expected)
+                    result[result_key]["pvalue"] = tmp_pvalues
 
     if copy:
         return result
