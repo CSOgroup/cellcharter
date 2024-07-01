@@ -5,7 +5,11 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 from anndata import AnnData
+from matplotlib.colors import ListedColormap
+from scipy.cluster import hierarchy
 from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
 from squidpy.pl._color_utils import Palette_t, _get_palette, _maybe_set_colors
@@ -16,7 +20,6 @@ except ImportError:
     from matplotlib.pyplot import get_cmap
 
 from cellcharter.gr._group import _proportion
-from cellcharter.pl._utils import _dotplot
 
 
 @d.dedent
@@ -97,22 +100,19 @@ def enrichment(
     adata: AnnData,
     group_key: str,
     label_key: str,
-    size_threshold: float | None = None,
-    color_threshold: float = 1,
-    legend_title: str | None = None,
-    dot_scale: float = 1,
-    cluster_labels: bool = True,
+    dot_scale: float = 3,
+    group_cluster: bool = True,
+    label_cluster: bool = False,
     groups: list | None = None,
     labels: list | None = None,
+    enriched_only: bool = True,
     palette: Palette_t | matplotlib.colors.ListedColormap | None = None,
-    figsize: tuple[float, float] | None = None,
+    figsize: tuple[float, float] | None = (10, 8),
     save: str | Path | None = None,
     **kwargs,
 ):
     """
-    Plot a dotplot of the enrichment of `y_key` in `x_key`.
-
-    This functions is based on a modified version of :func:`scanpy.pl.dotplot`.
+    Plot a dotplot of the enrichment of `label_key` in `group_key`.
 
     Parameters
     ----------
@@ -121,20 +121,18 @@ def enrichment(
         Key in :attr:`anndata.AnnData.obs` where groups are stored.
     label_key
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
-    size_threshold
-        Threshold for the size of the dots. Enrichments with value above this threshold will have all the same size.
-    color_threshold
-        Threshold to mark enrichments as significant.
-    legend_title
-        Title for the size legend.
     dot_scale
         Scale of the dots.
-    cluster_groups
+    group_cluster
+        If `True`, display groups ordered according to hierarchical clustering.
+    label_cluster
         If `True`, display labels ordered according to hierarchical clustering.
     groups
         The groups for which to show the enrichment.
     labels
         The labels for which to show the enrichment.
+    enriched_only
+        If `True`, display only enriched values and hide depleted values.
     palette
         Colormap for the enrichment values.
     %(plotting)s
@@ -149,32 +147,98 @@ def enrichment(
             "", [get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), get_cmap("coolwarm")(255)]
         )
 
-    enrichment = adata.uns[f"{group_key}_{label_key}_enrichment"]["enrichment"]
+    fold_change = adata.uns[f"{group_key}_{label_key}_enrichment"]["enrichment"].copy().T
+    col_name = fold_change.columns.name
+    idx_name = fold_change.index.name
 
     if labels is not None:
-        enrichment = enrichment.loc[:, labels]
+        fold_change = fold_change.loc[labels]
+
+        # The indexing removes the name of the index, so we need to set it back
+        fold_change.index.name = idx_name
 
     if groups is not None:
-        enrichment = enrichment.loc[groups]
+        fold_change = fold_change.loc[:, groups]
 
-    size_threshold = np.max(enrichment.values) if size_threshold is None else size_threshold
+        # The indexing removes the name of the columns, so we need to set it back
+        fold_change.columns.name = col_name
 
-    dp = _dotplot(
-        adata if labels is None else adata[adata.obs[label_key].isin(labels)],
-        x_key=group_key,
-        y_key=label_key,
-        values=enrichment,
-        abs_values=False,
-        size_threshold=(-1, size_threshold),
-        color_threshold=(0, color_threshold),
-        figsize=figsize,
-        cmap=palette,
-        size_title=legend_title,
-        dot_scale=dot_scale,
-        cluster_y=cluster_labels,
+    if enriched_only:
+        fold_change = fold_change.clip(lower=0)
+
+    # Set -inf values to minimum and inf values to maximum
+    fold_change[:] = np.nan_to_num(
+        fold_change,
+        neginf=np.min(fold_change[np.isfinite(fold_change)]),
+        posinf=np.max(fold_change[np.isfinite(fold_change)]),
+    )
+
+    # Calculate the dendrogram for rows and columns clustering
+    if label_cluster:
+        order_rows = hierarchy.leaves_list(hierarchy.linkage(fold_change, method="complete"))
+        fold_change = fold_change.iloc[order_rows]
+
+    if group_cluster:
+        order_cols = hierarchy.leaves_list(hierarchy.linkage(fold_change.T, method="complete"))
+        fold_change = fold_change.iloc[:, order_cols]
+
+    # Normalize the size of dots based on the absolute values in the dataframe, scaled to your preference
+    clipped_sizes = np.abs(fold_change).clip(upper=np.abs(fold_change).max().max())  # .clip(upper=color_threshold[1])
+    sizes = clipped_sizes * 100 / clipped_sizes.max().max() * dot_scale
+    sizes = pd.melt(sizes.reset_index(), id_vars=label_key)
+
+    labels = [0, 1]  # [01,2,3,4]
+    bins = [-np.inf, 0, np.inf]  # [-np.inf, color_threshold[0], 0, color_threshold[1], np.inf]
+    fold_change_color = fold_change.copy().apply(lambda x: pd.cut(x, bins=bins, labels=labels))
+    fold_change_color = pd.melt(fold_change_color.reset_index(), id_vars=label_key)
+
+    cmap = sns.diverging_palette(240, 10, as_cmap=True)  # Example: Blue to Red diverging palette
+
+    # Set colormap to red if below 0, blue if above 0
+    cmap = ListedColormap([cmap(0.0), cmap(1.0)])  # ListedColormap([cmap(0), cmap(90), cmap(180), cmap(360)])
+
+    # Create a figure and axis for plotting
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_facecolor("white")  # Set the background to white
+
+    scatter = ax.scatter(
+        pd.factorize(sizes[label_key])[0],
+        pd.factorize(sizes[group_key])[0],
+        s=sizes["value"],
+        c=fold_change_color["value"],
+        cmap=cmap,
+        alpha=1,
+        edgecolor="none",
         **kwargs,
     )
+
+    handles, _ = scatter.legend_elements(
+        prop="colors", num=[np.max(fold_change_color["value"]), np.min(fold_change_color["value"])]
+    )
+
+    fig.legend(handles, ["Enriched", "Depleted"], loc="outside upper left", title="", bbox_to_anchor=(0.98, 0.98))
+
+    fig.legend(
+        *scatter.legend_elements(
+            prop="sizes", num=5, func=lambda x: x / 100 / dot_scale * np.abs(fold_change).max().max()
+        ),
+        loc="outside upper left",
+        title="fold change",
+        bbox_to_anchor=(0.98, 0.88),
+    )
+
+    # Adjust the ticks to match the dataframe's indices and columns
+    ax.set_xticks(range(len(fold_change.index)))
+    ax.set_yticks(range(len(fold_change.columns)))
+    ax.set_xticklabels(fold_change.index, rotation=90)
+    ax.set_yticklabels(fold_change.columns)
+
+    # Remove grid lines
+    ax.grid(False)
+
+    plt.tight_layout()
+
     if save:
-        dp.savefig(save, bbox_inches="tight")
+        plt.savefig(save, bbox_inches="tight")
     else:
-        dp.show()
+        plt.show()
