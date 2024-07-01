@@ -106,6 +106,7 @@ def enrichment(
     groups: list | None = None,
     labels: list | None = None,
     enriched_only: bool = True,
+    size_threshold: float | None = None,
     palette: Palette_t | matplotlib.colors.ListedColormap | None = None,
     figsize: tuple[float, float] | None = (10, 8),
     save: str | Path | None = None,
@@ -133,6 +134,8 @@ def enrichment(
         The labels for which to show the enrichment.
     enriched_only
         If `True`, display only enriched values and hide depleted values.
+    size_threshold
+        Threshold for the size of the dots. Enrichment or depletions with absolute value above this threshold will have all the same size.
     palette
         Colormap for the enrichment values.
     %(plotting)s
@@ -183,8 +186,13 @@ def enrichment(
         fold_change = fold_change.iloc[:, order_cols]
 
     # Normalize the size of dots based on the absolute values in the dataframe, scaled to your preference
-    clipped_sizes = np.abs(fold_change).clip(upper=np.abs(fold_change).max().max())  # .clip(upper=color_threshold[1])
-    sizes = clipped_sizes * 100 / clipped_sizes.max().max() * dot_scale
+
+    sizes = np.abs(fold_change)
+    size_max = sizes.max().max() if size_threshold is None else size_threshold
+    if size_threshold is not None:
+        sizes = sizes.clip(upper=size_threshold)
+
+    sizes = sizes * 100 / sizes.max().max() * dot_scale
     sizes = pd.melt(sizes.reset_index(), id_vars=label_key)
 
     labels = [0, 1]  # [01,2,3,4]
@@ -218,10 +226,14 @@ def enrichment(
 
     fig.legend(handles, ["Enriched", "Depleted"], loc="outside upper left", title="", bbox_to_anchor=(0.98, 0.98))
 
+    handles, labels = scatter.legend_elements(prop="sizes", num=5, func=lambda x: x / 100 / dot_scale * size_max)
+
+    if size_threshold is not None:
+        labels[-1] = f">{size_threshold:.1f}"
+
     fig.legend(
-        *scatter.legend_elements(
-            prop="sizes", num=5, func=lambda x: x / 100 / dot_scale * np.abs(fold_change).max().max()
-        ),
+        handles,
+        labels,
         loc="outside upper left",
         title="fold change",
         bbox_to_anchor=(0.98, 0.88),
