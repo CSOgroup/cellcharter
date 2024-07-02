@@ -14,8 +14,9 @@ from pycave.bayes import GaussianMixture as PyCaveGaussianMixture
 from pycave.bayes.gmm.lightning_module import GaussianMixtureLightningModule
 from pycave.bayes.gmm.model import GaussianMixtureModel
 from pytorch_lightning import Trainer
-from scanpy._utils import AnyRandom
 from sklearn.cluster import KMeans, MiniBatchKMeans
+
+from .._utils import AnyRandom
 
 logger = logging.getLogger(__name__)
 
