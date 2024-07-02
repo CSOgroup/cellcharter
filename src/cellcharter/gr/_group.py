@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import concurrent.futures
-
 import numpy as np
 import pandas as pd
 from anndata import AnnData
@@ -51,7 +49,6 @@ def enrichment(
     label_key: str,
     pvalues: bool = False,
     n_perms: int = 1000,
-    n_jobs: int = -1,
     log: bool = True,
     observed_expected: bool = False,
     copy: bool = False,
@@ -66,6 +63,10 @@ def enrichment(
         Key in :attr:`anndata.AnnData.obs` where groups are stored.
     label_key
         Key in :attr:`anndata.AnnData.obs` where labels are stored.
+    pvalues
+        If `True`, compute empirical p-values by permutation. It will result in a slower computation.
+    n_perms
+        Number of permutations to compute empirical p-values.
     log
         If `True` use log2 fold change, otherwise use fold change.
     observed_expected
@@ -76,6 +77,7 @@ def enrichment(
     -------
     If ``copy = True``, returns a :class:`dict` with the following keys:
         - ``'enrichment'`` - the enrichment values.
+        - ``'pvalue'`` - the enrichment pvalues (if `pvalues is True`).
         - ``'observed'`` - the observed proportions (if `observed_expected is True`).
         - ``'expected'`` - the expected proportions (if `observed_expected is True`).
 
@@ -87,27 +89,22 @@ def enrichment(
     observed[observed.isna()] = 0
     if not pvalues:
         expected = adata.obs[group_key].value_counts() / adata.shape[0]
+        # Repeat over the number of labels
+        expected = pd.concat([expected] * len(observed.columns), axis=1, keys=observed.columns)
     else:
         annotations = adata.obs.copy()
 
-        expected = []
-        with tqdm(total=n_perms) as pbar:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=n_jobs) as executor:
-                futures = [
-                    executor.submit(_observed_permuted, annotations, group_key, label_key) for _ in range(n_perms)
-                ]
-
-                for future in concurrent.futures.as_completed(futures):
-                    expected.append(future.result())
-                    pbar.update(1)
-
+        expected = [_observed_permuted(annotations, group_key, label_key) for _ in tqdm(range(n_perms))]
         expected = np.stack(expected, axis=0)
+
+        print(expected.shape)
 
         empirical_pvalues = _empirical_pvalues(observed, expected)
 
         expected = np.mean(expected, axis=0)
         expected = pd.DataFrame(expected, columns=observed.columns, index=observed.index)
 
+    print(expected)
     enrichment = _enrichment(observed, expected, log=log)
 
     result = {"enrichment": enrichment}

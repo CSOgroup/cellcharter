@@ -51,3 +51,20 @@ class TestEnrichment:
         assert expected.shape[0] == adata.obs[GROUP_KEY].cat.categories.shape[0]
         assert np.all((observed >= 0) & (observed <= 1))
         assert np.all((expected >= 0) & (expected <= 1))
+
+    def test_perm(self):
+        result_analytical = cc.gr.enrichment(
+            adata, group_key=GROUP_KEY, label_key=LABEL_KEY, pvalues=False, copy=True, observed_expected=True
+        )
+        result_perm = cc.gr.enrichment(
+            adata,
+            group_key=GROUP_KEY,
+            label_key=LABEL_KEY,
+            pvalues=True,
+            n_perms=5000,
+            observed_expected=True,
+            copy=True,
+        )
+        np.testing.assert_allclose(result_analytical["enrichment"], result_perm["enrichment"], atol=0.1)
+        np.testing.assert_allclose(result_analytical["observed"], result_perm["observed"], atol=0.1)
+        np.testing.assert_allclose(result_analytical["expected"], result_perm["expected"], atol=0.1)
