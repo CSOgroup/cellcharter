@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import matplotlib
@@ -9,6 +10,8 @@ import pandas as pd
 import seaborn as sns
 from anndata import AnnData
 from matplotlib.colors import ListedColormap
+from matplotlib.legend_handler import HandlerTuple
+from matplotlib.ticker import ScalarFormatter
 from scipy.cluster import hierarchy
 from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs
@@ -95,6 +98,44 @@ def proportion(
         plt.savefig(save, bbox_extra_artists=(lgd, lgd), bbox_inches="tight")
 
 
+def _legend_enrichment(scatter, enriched_only, pvalues, significance, size_threshold, dot_scale, size_max):
+    handles, labels = scatter.legend_elements(prop="colors", fmt=ScalarFormatter(useMathText=False))
+
+    handles_list = []
+    labels_list = []
+    empty_handle = matplotlib.patches.Rectangle((0, 0), 1, 1, fill=False, edgecolor="none", visible=False)
+
+    if enriched_only is False:
+        handles_list.extend(
+            [
+                tuple([handle for handle, label in zip(handles, labels) if int(label) in [3, 2]]),
+                tuple([handle for handle, label in zip(handles, labels) if int(label) in [0, 1]]),
+                empty_handle,
+            ]
+        )
+        labels_list.extend(["Enriched", "Depleted", ""])
+
+    if pvalues is not None:
+        handles_list.extend(
+            [
+                tuple([handle for handle, label in zip(handles, labels) if int(label) in [0, 3]]),
+                tuple([handle for handle, label in zip(handles, labels) if int(label) in [1, 2]]),
+                empty_handle,
+            ]
+        )
+        labels_list.extend([f"p-value < {significance}", f"p-value >= {significance}", ""])
+
+    handles, labels = scatter.legend_elements(prop="sizes", num=5, func=lambda x: x / 100 / dot_scale * size_max)
+
+    if size_threshold is not None:
+        labels[-1] = f">{size_threshold:.1f}"
+
+    handles_list.extend([empty_handle] + handles)
+    labels_list.extend(["Fold change"] + labels)
+
+    return handles_list, labels_list
+
+
 @d.dedent
 def enrichment(
     adata: AnnData,
@@ -105,6 +146,7 @@ def enrichment(
     label_cluster: bool = False,
     groups: list | None = None,
     labels: list | None = None,
+    significance: float | None = None,
     enriched_only: bool = True,
     size_threshold: float | None = None,
     palette: Palette_t | matplotlib.colors.ListedColormap | None = None,
@@ -132,6 +174,8 @@ def enrichment(
         The groups for which to show the enrichment.
     labels
         The labels for which to show the enrichment.
+    significance
+        If not `None`, show fold changes with a p-value above this threshold in a lighter color.
     enriched_only
         If `True`, display only enriched values and hide depleted values.
     size_threshold
@@ -149,6 +193,16 @@ def enrichment(
         palette = matplotlib.colors.LinearSegmentedColormap.from_list(
             "", [get_cmap("coolwarm")(0), matplotlib.colors.to_rgb("darkgrey"), get_cmap("coolwarm")(255)]
         )
+    pvalues = None
+    if significance is not None:
+        if "pvalue" not in adata.uns[f"{group_key}_{label_key}_enrichment"]:
+            warnings.warn(
+                "Significance requires gr.enrichment to be run with pvalues=True. Ignoring significance.",
+                UserWarning,
+                stacklevel=2,
+            )
+        else:
+            pvalues = adata.uns[f"{group_key}_{label_key}_enrichment"]["pvalue"].copy().T
 
     fold_change = adata.uns[f"{group_key}_{label_key}_enrichment"]["enrichment"].copy().T
     col_name = fold_change.columns.name
@@ -186,7 +240,6 @@ def enrichment(
         fold_change = fold_change.iloc[:, order_cols]
 
     # Normalize the size of dots based on the absolute values in the dataframe, scaled to your preference
-
     sizes = np.abs(fold_change)
     size_max = sizes.max().max() if size_threshold is None else size_threshold
     if size_threshold is not None:
@@ -195,15 +248,29 @@ def enrichment(
     sizes = sizes * 100 / sizes.max().max() * dot_scale
     sizes = pd.melt(sizes.reset_index(), id_vars=label_key)
 
-    labels = [0, 1]  # [01,2,3,4]
-    bins = [-np.inf, 0, np.inf]  # [-np.inf, color_threshold[0], 0, color_threshold[1], np.inf]
-    fold_change_color = fold_change.copy().apply(lambda x: pd.cut(x, bins=bins, labels=labels))
-    fold_change_color = pd.melt(fold_change_color.reset_index(), id_vars=label_key)
-
     cmap = sns.diverging_palette(240, 10, as_cmap=True)  # Example: Blue to Red diverging palette
 
     # Set colormap to red if below 0, blue if above 0
-    cmap = ListedColormap([cmap(0.0), cmap(1.0)])  # ListedColormap([cmap(0), cmap(90), cmap(180), cmap(360)])
+    if pvalues is not None:
+        fold_change_color = fold_change.copy()
+        if enriched_only:
+            cmap = ListedColormap([cmap(360), cmap(180)])
+            fold_change_color[pvalues <= significance] = 0
+            fold_change_color[pvalues > significance] = 1
+        else:
+            cmap = ListedColormap([cmap(0), cmap(90), cmap(180), cmap(360)])
+            fold_change_color[(fold_change < 0) & (pvalues <= significance)] = 0
+            fold_change_color[(fold_change < 0) & (pvalues > significance)] = 1
+            fold_change_color[(fold_change >= 0) & (pvalues > significance)] = 2
+            fold_change_color[(fold_change >= 0) & (pvalues <= significance)] = 3
+    else:
+        cmap = ListedColormap([cmap(0.0), cmap(1.0)])  # ListedColormap([cmap(0), cmap(90), cmap(180), cmap(360)])
+
+        labels = [0, 3]
+        bins = [-np.inf, 0, np.inf]
+        fold_change_color = fold_change.copy().apply(lambda x: pd.cut(x, bins=bins, labels=labels))
+
+    fold_change_color = pd.melt(fold_change_color.reset_index(), id_vars=label_key)
 
     # Create a figure and axis for plotting
     fig, ax = plt.subplots(figsize=figsize)
@@ -220,23 +287,19 @@ def enrichment(
         **kwargs,
     )
 
-    handles, _ = scatter.legend_elements(
-        prop="colors", num=[np.max(fold_change_color["value"]), np.min(fold_change_color["value"])]
+    handles, labels = _legend_enrichment(
+        scatter, enriched_only, pvalues, significance, size_threshold, dot_scale, size_max
     )
-
-    fig.legend(handles, ["Enriched", "Depleted"], loc="outside upper left", title="", bbox_to_anchor=(0.98, 0.98))
-
-    handles, labels = scatter.legend_elements(prop="sizes", num=5, func=lambda x: x / 100 / dot_scale * size_max)
-
-    if size_threshold is not None:
-        labels[-1] = f">{size_threshold:.1f}"
 
     fig.legend(
         handles,
         labels,
         loc="outside upper left",
-        title="fold change",
-        bbox_to_anchor=(0.98, 0.88),
+        bbox_to_anchor=(0.98, 0.98),
+        handler_map={tuple: HandlerTuple(ndivide=None, pad=1)},
+        borderpad=1,
+        handletextpad=1.0,
+        fontsize="small",
     )
 
     # Adjust the ticks to match the dataframe's indices and columns

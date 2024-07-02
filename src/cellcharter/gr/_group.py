@@ -1,19 +1,27 @@
 from __future__ import annotations
 
+import concurrent.futures
+
 import numpy as np
 import pandas as pd
 from anndata import AnnData
 from squidpy._docs import d
+from tqdm import tqdm
 
 
-def _proportion(adata, id_key, val_key, normalize=True):
-    df = pd.pivot(adata.obs[[id_key, val_key]].value_counts().reset_index(), index=id_key, columns=val_key)
+def _proportion(obs, id_key, val_key, normalize=True):
+    df = pd.pivot(obs[[id_key, val_key]].value_counts().reset_index(), index=id_key, columns=val_key)
     df[df.isna()] = 0
     df.columns = df.columns.droplevel(0)
     if normalize:
         return df.div(df.sum(axis=1), axis=0)
     else:
         return df
+
+
+def _observed_permuted(annotations, group_key, label_key):
+    annotations[group_key] = annotations[group_key].sample(frac=1).reset_index(drop=True).values
+    return _proportion(annotations, id_key=label_key, val_key=group_key).reindex().T
 
 
 def _enrichment(observed, expected, log=True):
@@ -25,11 +33,25 @@ def _enrichment(observed, expected, log=True):
     return enrichment
 
 
+def _empirical_pvalues(observed, expected):
+    pvalues = np.zeros(observed.shape)
+    pvalues[observed.values > 0] = (
+        1 - np.sum(expected[:, observed.values > 0] < observed.values[observed.values > 0], axis=0) / expected.shape[0]
+    )
+    pvalues[observed.values < 0] = (
+        1 - np.sum(expected[:, observed.values < 0] > observed.values[observed.values < 0], axis=0) / expected.shape[0]
+    )
+    return pd.DataFrame(pvalues, columns=observed.columns, index=observed.index)
+
+
 @d.dedent
 def enrichment(
     adata: AnnData,
     group_key: str,
     label_key: str,
+    pvalues: bool = False,
+    n_perms: int = 1000,
+    n_jobs: int = -1,
     log: bool = True,
     observed_expected: bool = False,
     copy: bool = False,
@@ -61,9 +83,30 @@ def enrichment(
         - :attr:`anndata.AnnData.uns` ``['{group_key}_{label_key}_nhood_enrichment']`` - the above mentioned dict.
         - :attr:`anndata.AnnData.uns` ``['{group_key}_{label_key}_nhood_enrichment']['params']`` - the parameters used.
     """
-    observed = _proportion(adata, id_key=label_key, val_key=group_key).reindex().T
+    observed = _proportion(adata.obs, id_key=label_key, val_key=group_key).reindex().T
     observed[observed.isna()] = 0
-    expected = adata.obs[group_key].value_counts() / adata.shape[0]
+    if not pvalues:
+        expected = adata.obs[group_key].value_counts() / adata.shape[0]
+    else:
+        annotations = adata.obs.copy()
+
+        expected = []
+        with tqdm(total=n_perms) as pbar:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=n_jobs) as executor:
+                futures = [
+                    executor.submit(_observed_permuted, annotations, group_key, label_key) for _ in range(n_perms)
+                ]
+
+                for future in concurrent.futures.as_completed(futures):
+                    expected.append(future.result())
+                    pbar.update(1)
+
+        expected = np.stack(expected, axis=0)
+
+        empirical_pvalues = _empirical_pvalues(observed, expected)
+
+        expected = np.mean(expected, axis=0)
+        expected = pd.DataFrame(expected, columns=observed.columns, index=observed.index)
 
     enrichment = _enrichment(observed, expected, log=log)
 
@@ -72,6 +115,9 @@ def enrichment(
     if observed_expected:
         result["observed"] = observed
         result["expected"] = expected
+
+    if pvalues:
+        result["pvalue"] = empirical_pvalues
 
     if copy:
         return result
