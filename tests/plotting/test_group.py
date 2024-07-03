@@ -41,6 +41,7 @@ class TestPlotEnrichment:
 
     @pytest.mark.parametrize("adata_enrichment", [adata_analytical, adata_empirical])
     @pytest.mark.parametrize("label_cluster", [False, True])
+    @pytest.mark.parametrize("show_pvalues", [False, True])
     @pytest.mark.parametrize("groups", [None, adata.obs[GROUP_KEY].cat.categories[:3]])
     @pytest.mark.parametrize("labels", [None, adata.obs[LABEL_KEY].cat.categories[:4]])
     @pytest.mark.parametrize("size_threshold", [1, 2.5])
@@ -48,7 +49,17 @@ class TestPlotEnrichment:
     @pytest.mark.parametrize("figsize", [None, (10, 8)])
     @pytest.mark.parametrize("alpha,edgecolor", [(1, "red"), (0.5, "blue")])
     def test_params(
-        self, adata_enrichment, label_cluster, groups, labels, size_threshold, palette, figsize, alpha, edgecolor
+        self,
+        adata_enrichment,
+        label_cluster,
+        show_pvalues,
+        groups,
+        labels,
+        size_threshold,
+        palette,
+        figsize,
+        alpha,
+        edgecolor,
     ):
         cc.pl.enrichment(
             adata_enrichment,
@@ -57,6 +68,7 @@ class TestPlotEnrichment:
             label_cluster=label_cluster,
             groups=groups,
             labels=labels,
+            show_pvalues=show_pvalues,
             size_threshold=size_threshold,
             palette=palette,
             figsize=figsize,

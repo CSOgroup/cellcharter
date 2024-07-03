@@ -154,7 +154,7 @@ def _significance_colors(color, pvalues, significance):
     return color
 
 
-def _pvalue_colorbar(ax, cmap_enriched, cmap_depleted, norm, enriched_only):
+def _pvalue_colorbar(ax, cmap_enriched, cmap_depleted, norm):
     from matplotlib.colorbar import ColorbarBase
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -170,7 +170,7 @@ def _pvalue_colorbar(ax, cmap_enriched, cmap_depleted, norm, enriched_only):
     cbar1.set_ticks([], minor=True)
     cbar1.ax.set_title("p-value", fontdict={"fontsize": 10})
 
-    if enriched_only is False:
+    if cmap_depleted is not None:
         cax2 = divider.append_axes("right", size="2%", pad=0.10)
 
         # Place colorbars next to each other and share ticks
@@ -385,6 +385,7 @@ def enrichment(
     )
     scatters.append(scatter_enriched)
 
+    cmap_depleted = None
     if enriched_only is False:
         cmap_depleted = matplotlib.colors.LinearSegmentedColormap.from_list("", [palette(0.0), palette(0.5)])
         scatter_depleted = ax.scatter(
@@ -399,7 +400,7 @@ def enrichment(
         scatters.append(scatter_depleted)
 
     if pvalues is not None and significance is None:
-        _pvalue_colorbar(ax, cmap_enriched, cmap_depleted, norm, enriched_only)
+        _pvalue_colorbar(ax, cmap_enriched, cmap_depleted, norm)
 
     handles_list, labels_list = _enrichment_legend(
         scatters, fold_change_melt, dot_scale, size_max, enriched_only, significant_only, significance, size_threshold
@@ -421,6 +422,7 @@ def enrichment(
     ax.set_yticks(range(len(fold_change.columns)))
     ax.set_xticklabels(fold_change.index, rotation=90)
     ax.set_yticklabels(fold_change.columns)
+    ax.tick_params(axis="both", which="major", labelsize=8)
 
     # Remove grid lines
     ax.grid(False)

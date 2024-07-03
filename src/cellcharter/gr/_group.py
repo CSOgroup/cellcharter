@@ -97,14 +97,11 @@ def enrichment(
         expected = [_observed_permuted(annotations, group_key, label_key) for _ in tqdm(range(n_perms))]
         expected = np.stack(expected, axis=0)
 
-        print(expected.shape)
-
         empirical_pvalues = _empirical_pvalues(observed, expected)
 
         expected = np.mean(expected, axis=0)
         expected = pd.DataFrame(expected, columns=observed.columns, index=observed.index)
 
-    print(expected)
     enrichment = _enrichment(observed, expected, log=log)
 
     result = {"enrichment": enrichment}
