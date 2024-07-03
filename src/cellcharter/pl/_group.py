@@ -236,6 +236,7 @@ def enrichment(
     significant_only: bool = False,
     size_threshold: float | None = None,
     palette: str | matplotlib.colors.ListedColormap | None = None,
+    fontsize: str | int = "small",
     figsize: tuple[float, float] | None = (7, 5),
     save: str | Path | None = None,
     **kwargs,
@@ -414,7 +415,7 @@ def enrichment(
         handler_map={tuple: HandlerTuple(ndivide=None, pad=1)},
         borderpad=1,
         handletextpad=1.0,
-        fontsize="x-small",
+        fontsize=fontsize,
     )
 
     # Adjust the ticks to match the dataframe's indices and columns
@@ -422,7 +423,7 @@ def enrichment(
     ax.set_yticks(range(len(fold_change.columns)))
     ax.set_xticklabels(fold_change.index, rotation=90)
     ax.set_yticklabels(fold_change.columns)
-    ax.tick_params(axis="both", which="major", labelsize=8)
+    ax.tick_params(axis="both", which="major", labelsize=fontsize)
 
     # Remove grid lines
     ax.grid(False)
@@ -431,5 +432,3 @@ def enrichment(
 
     if save:
         plt.savefig(save, bbox_inches="tight")
-    else:
-        plt.show()

@@ -227,6 +227,7 @@ def shape_metrics(
     cluster_id: list[str] | None = None,
     component_key: str = "component",
     metrics: str | tuple[str] | list[str] = ("linearity", "curl"),
+    fontsize: str | int = "small",
     figsize: tuple[float, float] = (8, 7),
     title: str | None = None,
 ) -> None:
@@ -270,6 +271,7 @@ def shape_metrics(
         .set_index(component_key)
         .to_dict()[condition_key]
     )
+
     metrics_df[cluster_key] = (
         adata[~adata.obs[condition_key].isna()]
         .obs[[component_key, cluster_key]]
@@ -305,6 +307,12 @@ def shape_metrics(
             showfliers=False,
             hue_order=[condition1, condition2],
         )
+
+        ax.tick_params(labelsize=fontsize)
+        ax.set_xlabel(ax.get_xlabel(), fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=fontsize)
+
         adjust_box_widths(fig, 0.9)
 
         ax = sns.stripplot(
@@ -323,6 +331,7 @@ def shape_metrics(
             handles[0 : len(metrics_condition_pair[condition_key].unique())],
             labels[0 : len(metrics_condition_pair[condition_key].unique())],
             bbox_to_anchor=(1.24, 1.02),
+            fontsize=fontsize,
         )
 
         for count, metric in enumerate(["linearity", "curl"]):
@@ -351,7 +360,7 @@ def shape_metrics(
                     ha="center",
                     va="bottom",
                     color=col,
-                    fontdict={"fontsize": "medium"},
+                    fontdict={"fontsize": fontsize},
                 )
             else:
                 plt.text(
@@ -361,8 +370,8 @@ def shape_metrics(
                     ha="center",
                     va="bottom",
                     color=col,
-                    fontdict={"fontsize": "medium"},
+                    fontdict={"fontsize": fontsize},
                 )
         if title is not None:
-            plt.title(title)
+            plt.title(title, fontdict={"fontsize": fontsize})
         plt.show()

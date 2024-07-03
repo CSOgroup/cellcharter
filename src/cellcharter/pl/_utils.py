@@ -59,6 +59,7 @@ def _heatmap(
     method: str | None = None,
     cont_cmap: str | mcolors.Colormap = "bwr",
     annotate: bool = True,
+    fontsize: int | None = None,
     figsize: tuple[float, float] | None = None,
     dpi: int | None = None,
     cbar_kwargs: Mapping[str, Any] = MappingProxyType({}),
@@ -69,6 +70,10 @@ def _heatmap(
     **kwargs: Any,
 ) -> mpl.figure.Figure:
     cbar_kwargs = dict(cbar_kwargs)
+
+    if fontsize is not None:
+        kwargs["annot_kws"] = {"fontdict": {"fontsize": fontsize}}
+
     if ax is None:
         fig, ax = plt.subplots(constrained_layout=True, dpi=dpi, figsize=figsize)
     else:
@@ -152,6 +157,7 @@ def _heatmap(
         format="%0.2f",
         **cbar_kwargs,
     )
+    c.ax.tick_params(labelsize=fontsize)
 
     # column labels colorbar
     c = fig.colorbar(col_sm, cax=col_cats, orientation="horizontal", ticklocation="bottom")
@@ -161,7 +167,7 @@ def _heatmap(
         c.set_ticklabels([])
     else:
         c.set_ticks(np.arange(len(col_labels)) + 0.5)
-        c.set_ticklabels(col_labels)
+        c.set_ticklabels(col_labels, fontdict={"fontsize": fontsize})
         if np.any([len(l) > 3 for l in col_labels]):
             c.ax.tick_params(rotation=90)
     c.outline.set_visible(False)
@@ -173,11 +179,11 @@ def _heatmap(
         c.set_ticklabels([])
     else:
         c.set_ticks(np.arange(n_cls) + 0.5)
-        c.set_ticklabels(row_labels)
-        c.set_label(key)
+        c.set_ticklabels(row_labels, fontdict={"fontsize": fontsize})
+        c.set_label(key, fontsize=fontsize)
     c.outline.set_visible(False)
 
-    ax.set_title(title)
+    ax.set_title(title, fontdict={"fontsize": fontsize})
 
     return fig, ax
 
