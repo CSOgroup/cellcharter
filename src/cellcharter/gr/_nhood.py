@@ -298,8 +298,12 @@ def diff_nhood_enrichment(
 
     enrichments = {}
     for condition in conditions:
+        adata_condition = adata[adata.obs[condition_key] == condition].copy()
+        adata_condition.obs[cluster_key] = adata_condition.obs[cluster_key].cat.set_categories(
+            adata.obs[cluster_key].cat.categories
+        )
         enrichments[condition] = nhood_enrichment(
-            adata[adata.obs[condition_key] == condition],
+            adata_condition,
             cluster_key=cluster_key,
             copy=True,
             **nhood_kwargs,
