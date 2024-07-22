@@ -67,7 +67,7 @@ This example is based on a Linux CentOS 7 system with an NVIDIA A100 GPU.
 ```bash
 conda create -n cellcharter-env -c conda-forge python=3.10 mamba
 conda activate cellcharter-env
-mamba install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.6 -c pytorch -c conda-forge
+mamba install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.6 mkl=2024.0 -c pytorch -c conda-forge
 pip install pyro-ppl==1.8.6 scvi-tools==0.20.3
 pip install cellcharter
 ```
