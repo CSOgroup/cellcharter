@@ -96,7 +96,7 @@ def _heatmap(
         )
 
     row_order = row_order[::-1]
-    row_labels = adata.obs[key][row_order]
+    row_labels = adata.obs[key].iloc[row_order]
     col_labels = adata.var_names[col_order]
 
     data = adata[row_order, col_order].copy().X

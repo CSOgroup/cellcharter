@@ -135,7 +135,7 @@ def boundaries(
         "cells": sd.models.ShapesModel.parse(cell_circles),
     }
 
-    sdata = sd.SpatialData(shapes=shapes, table=table)
+    sdata = sd.SpatialData(shapes=shapes, tables=table)
 
     ax = plt.gca()
     if show_cells:
@@ -151,7 +151,7 @@ def boundaries(
             sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
 
     sdata.pl.render_shapes(
-        elements="clusters",
+        element="clusters",
         color=component_key,
         fill_alpha=alpha_boundary,
     ).pl.show(ax=ax)

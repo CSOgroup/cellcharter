@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pytest
 import squidpy as sq
 
@@ -75,6 +76,7 @@ class TestPlotEnrichment:
             alpha=alpha,
             edgecolor=edgecolor,
         )
+        plt.close()
 
     def test_no_pvalues(self):
         # If the enrichment data is not present, it should raise an error

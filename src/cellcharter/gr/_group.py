@@ -26,7 +26,8 @@ def _enrichment(observed, expected, log=True):
     enrichment = observed.div(expected, axis="index", level=0)
 
     if log:
-        enrichment = np.log2(enrichment)
+        with np.errstate(divide="ignore"):
+            enrichment = np.log2(enrichment)
     enrichment = enrichment.fillna(enrichment.min())
     return enrichment
 

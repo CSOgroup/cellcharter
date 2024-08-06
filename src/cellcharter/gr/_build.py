@@ -120,9 +120,9 @@ def remove_intra_cluster_links(
 
     # ToDo: compute inter_cluster_mask only on conns and apply mask to both matrices
     for matrix in [conns, dists]:
-        target_clusters = np.array(adata.obs[cluster_key][matrix.indices])
+        target_clusters = np.array(adata.obs[cluster_key].iloc[matrix.indices])
         source_clusters = np.array(
-            adata.obs[cluster_key][np.repeat(np.arange(matrix.indptr.shape[0] - 1), np.diff(matrix.indptr))]
+            adata.obs[cluster_key].iloc[np.repeat(np.arange(matrix.indptr.shape[0] - 1), np.diff(matrix.indptr))]
         )
 
         inter_cluster_mask = (source_clusters != target_clusters).astype(int)
