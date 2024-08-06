@@ -8,22 +8,26 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sps
 import torch
-from lightkit.data import DataLoader, TensorLike, collate_tensor, dataset_from_tensors
-from pycave import set_logging_level
-from pycave.bayes import GaussianMixture as PyCaveGaussianMixture
-from pycave.bayes.gmm.lightning_module import GaussianMixtureLightningModule
-from pycave.bayes.gmm.model import GaussianMixtureModel
 from pytorch_lightning import Trainer
-from sklearn.cluster import KMeans, MiniBatchKMeans
+from torchgmm import set_logging_level
+from torchgmm.base.data import (
+    DataLoader,
+    TensorLike,
+    collate_tensor,
+    dataset_from_tensors,
+)
+from torchgmm.bayes import GaussianMixture as TorchGaussianMixture
+from torchgmm.bayes.gmm.lightning_module import GaussianMixtureLightningModule
+from torchgmm.bayes.gmm.model import GaussianMixtureModel
 
 from .._utils import AnyRandom
 
 logger = logging.getLogger(__name__)
 
 
-class GaussianMixture(PyCaveGaussianMixture):
+class GaussianMixture(TorchGaussianMixture):
     """
-    Adapted version of GaussianMixture clustering model from the `PyCave <https://pycave.borchero.com/index.html>`_ library.
+    Adapted version of GaussianMixture clustering model from the `torchgmm <https://github.com/marcovarrone/torchgmm/>`_ library.
 
     Parameters
     ----------
@@ -49,7 +53,7 @@ class GaussianMixture(PyCaveGaussianMixture):
         memory.
     trainer_params
         Initialization parameters to use when initializing a PyTorch Lightning
-        trainer. By default, it disables various stdout logs unless PyCave is configured to
+        trainer. By default, it disables various stdout logs unless TorchGMM is configured to
         do verbose logging. Checkpointing and logging are disabled regardless of the log
         level. This estimator further sets the following overridable defaults:
         - ``max_epochs=100``.
@@ -72,7 +76,7 @@ class GaussianMixture(PyCaveGaussianMixture):
         n_clusters: int = 1,
         *,
         covariance_type: str = "full",
-        init_strategy: str = "sklearn",
+        init_strategy: str = "kmeans++",
         init_means: torch.Tensor = None,
         convergence_tolerance: float = 0.001,
         covariance_regularization: float = 1e-06,
@@ -109,24 +113,22 @@ class GaussianMixture(PyCaveGaussianMixture):
             raise ValueError(
                 "Sparse data is not supported. You may have forgotten to reduce the dimensionality of the data. Otherwise, please convert the data to a dense format."
             )
-
-        if self.init_strategy == "sklearn":
-            if self.batch_size is None:
-                kmeans = KMeans(n_clusters=self.num_components, random_state=self.random_state, n_init=1)
-            else:
-                kmeans = MiniBatchKMeans(
-                    n_clusters=self.num_components, random_state=self.random_state, n_init=1, batch_size=self.batch_size
-                )
-            kmeans.fit(data)
-            self.init_means = torch.tensor(kmeans.cluster_centers_).float()
         return self._fit(data)
 
     def _fit(self, data) -> GaussianMixture:
         try:
             return super().fit(data)
-        except torch._C._LinAlgError:
-            self.covariance_regularization *= 10
-            return self._fit(data)
+        except torch._C._LinAlgError as e:
+            if self.covariance_regularization >= 1:
+                raise ValueError(
+                    "Cholesky decomposition failed even with covariance regularization = 1. The matrix may be singular."
+                ) from e
+            else:
+                self.covariance_regularization *= 10
+                logger.warning(
+                    f"Cholesky decomposition failed. Retrying with covariance regularization {self.covariance_regularization}."
+                )
+                return self._fit(data)
 
     def predict(self, data: TensorLike) -> torch.Tensor:
         """
@@ -237,7 +239,7 @@ class Cluster(GaussianMixture):
         memory.
     trainer_params
         Initialization parameters to use when initializing a PyTorch Lightning
-        trainer. By default, it disables various stdout logs unless PyCave is configured to
+        trainer. By default, it disables various stdout logs unless TorchGMM is configured to
         do verbose logging. Checkpointing and logging are disabled regardless of the log
         level. This estimator further sets the following overridable defaults:
         - ``max_epochs=100``.
@@ -258,7 +260,7 @@ class Cluster(GaussianMixture):
         n_clusters: int = 1,
         *,
         covariance_type: str = "full",
-        init_strategy: str = "sklearn",
+        init_strategy: str = "kmeans++",
         init_means: torch.Tensor = None,
         convergence_tolerance: float = 0.001,
         covariance_regularization: float = 1e-06,

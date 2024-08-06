@@ -194,9 +194,10 @@ class TestConnectedComponents:
 
     def test_codex(self, codex_adata: AnnData):
         min_cells = 250
-        correct_number_components = 104
-        del codex_adata.obs["component"]
-        cc.gr.connected_components(codex_adata, cluster_key="spatial_cluster", min_cells=min_cells)
+        correct_number_components = 97
+        if "component" in codex_adata.obs:
+            del codex_adata.obs["component"]
+        cc.gr.connected_components(codex_adata, cluster_key="cluster_cellcharter", min_cells=min_cells)
 
         assert codex_adata.obs["component"].dtype == "category"
         assert len(codex_adata.obs["component"].cat.categories) == correct_number_components
@@ -205,4 +206,4 @@ class TestConnectedComponents:
             assert np.sum(codex_adata.obs["component"] == component) >= min_cells
 
             # Check that all cells in the component are in the same cluster
-            assert len(codex_adata.obs["spatial_cluster"][codex_adata.obs["component"] == component].unique()) == 1
+            assert len(codex_adata.obs["cluster_cellcharter"][codex_adata.obs["component"] == component].unique()) == 1

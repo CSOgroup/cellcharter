@@ -18,7 +18,7 @@ class TestClusterAutoK:
         cc.gr.aggregate_neighbors(adata, n_layers=3)
 
         model_params = {
-            "init_strategy": "sklearn",
+            "init_strategy": "kmeans++",
             "random_state": 42,
             "trainer_params": {"accelerator": "cpu", "enable_progress_bar": False},
         }

@@ -1,0 +1,19 @@
+{
+    "n_clusters": 3,
+    "covariance_type": "full",
+    "init_strategy": "kmeans++",
+    "init_means": null,
+    "convergence_tolerance": 0.001,
+    "covariance_regularization": 1e-6,
+    "batch_size": null,
+    "trainer_params": {
+        "logger": false,
+        "log_every_n_steps": 1,
+        "enable_progress_bar": false,
+        "enable_checkpointing": false,
+        "enable_model_summary": false,
+        "max_epochs": 100,
+        "accelerator": "cpu"
+    },
+    "random_state": 44
+}

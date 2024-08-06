@@ -15,9 +15,9 @@ from typing import Any, Dict, List
 import anndata as ad
 import numpy as np
 import pandas as pd
-from lightkit.utils.path import PathType
-from pycave import set_logging_level
 from sklearn.metrics import fowlkes_mallows_score, mean_absolute_percentage_error
+from torchgmm import set_logging_level
+from torchgmm.base.utils.path import PathType
 from tqdm.auto import tqdm
 
 import cellcharter as cc
@@ -242,10 +242,10 @@ class ClusterAutoK:
             with (path / "params.json").open("w+") as f:
                 f.write(data)
         except TypeError:
-            warnings.warn(
-                f"Failed to serialize parameters of `{self.__class__.__name__}` to JSON. " "Falling back to `pickle`.",
-                stacklevel=2,
-            )
+            # warnings.warn(
+            #     f"Failed to serialize parameters of `{self.__class__.__name__}` to JSON. " "Falling back to `pickle`.",
+            #     stacklevel=2,
+            # )
             with (path / "params.pickle").open("wb+") as f:
                 pickle.dump(params, f)
 
@@ -280,11 +280,11 @@ class ClusterAutoK:
             with (path / "attributes.json").open("w+") as f:
                 f.write(data)
         except TypeError:
-            warnings.warn(
-                f"Failed to serialize fitted attributes of `{self.__class__.__name__}` to JSON. "
-                "Falling back to `pickle`.",
-                stacklevel=2,
-            )
+            # warnings.warn(
+            #     f"Failed to serialize fitted attributes of `{self.__class__.__name__}` to JSON. "
+            #     "Falling back to `pickle`.",
+            #     stacklevel=2,
+            # )
             with (path / "attributes.pickle").open("wb+") as f:
                 pickle.dump(attributes, f)
 
