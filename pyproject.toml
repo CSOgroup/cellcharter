@@ -28,9 +28,9 @@ dependencies = [
     "anndata",
     "scikit-learn",
     "squidpy",
+    "torchgmm",
     # for debug logging (referenced from the issue template)
     "session-info",
-    "pycave",
     "spatialdata",
     "spatialdata-plot >= 0.1.0",
     "rasterio",
@@ -55,6 +55,7 @@ doc = [
     "ipykernel",
     "ipython",
     "sphinx-copybutton",
+    "sphinx-design"
 ]
 test = [
     "pytest",
