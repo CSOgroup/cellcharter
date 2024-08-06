@@ -192,8 +192,7 @@ def connected_components(
             labels, n_components = _connected_components(
                 adj=adata_cluster.obsp[connectivity_key], min_cells=min_cells, count=count
             )
-
-            output[adata_cluster.obs.index] = labels
+            output[adata.obs[cluster_key] == cluster] = labels
             count += n_components
     else:
         labels, n_components = _connected_components(
