@@ -13,4 +13,4 @@ diff a/.github/workflows/test.yaml b/.github/workflows/test.yaml	(rejected hunks
 +            python: "3.12"
              pip-flags: "--pre"
              name: PRE-RELEASE DEPENDENCIES
- 
+
