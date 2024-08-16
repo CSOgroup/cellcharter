@@ -10,7 +10,7 @@ exclude = [
 
 [project]
 name = "cellcharter"
-version = "0.2.3"
+version = "0.3.0"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
 requires-python = ">=3.8,<3.11"
