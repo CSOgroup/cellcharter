@@ -20,6 +20,7 @@ from torchgmm import set_logging_level
 from torchgmm.base.utils.path import PathType
 from tqdm.auto import tqdm
 
+
 import cellcharter as cc
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ class ClusterAutoK:
         self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
         self.stability = []
 
-    def fit(self, adata: ad.AnnData, use_rep: str = None):
+    def fit(self, adata: ad.AnnData, use_rep: str = 'X_cellcharter'):
         """
         Cluster data multiple times for each number of clusters (K) in the selected range and compute the average stability for each them.
 
@@ -95,18 +96,16 @@ class ClusterAutoK:
         adata
             Annotated data object.
         use_rep
-            Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.obsm['X_cellcharter']` if present, otherwise :attr:`anndata.AnnData.X`.
+            Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
         """
         logging_level = logging.root.level
-        X = (
-            adata.obsm[use_rep]
-            if use_rep is not None
-            else adata.obsm["X_cellcharter"]
-            if "X_cellcharter" in adata.obsm
-            else adata.X
-        )
+        
+        if use_rep not in adata.obsm:
+            raise ValueError(f"{use_rep} not found in adata.obsm. If you want to use adata.X, set use_rep=None")
 
-        set_logging_level(logging.WARNING)
+        X = adata.obsm[use_rep] if use_rep is not None else adata.X
+
+        set_logging_level(logging.ERROR)
 
         self.labels = defaultdict(list)
         self.best_models = {}
