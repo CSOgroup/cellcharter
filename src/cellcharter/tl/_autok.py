@@ -97,7 +97,6 @@ class ClusterAutoK:
         use_rep
             Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
         """
-
         if use_rep not in adata.obsm:
             raise ValueError(f"{use_rep} not found in adata.obsm. If you want to use adata.X, set use_rep=None")
 
@@ -115,7 +114,7 @@ class ClusterAutoK:
 
         previous_stability = None
         for i in range(self.max_runs):
-            print(f"Iteration {i+1}/{self.max_runs}")
+            print(f"Iteration {i + 1}/{self.max_runs}")
             new_labels = {}
 
             for k in tqdm(self.n_clusters, disable=(len(self.n_clusters) == 1)):
@@ -148,7 +147,7 @@ class ClusterAutoK:
                         for k, new_l in new_labels.items():
                             self.labels[k].append(new_l)
                         print(
-                            f"Convergence with a change in stability of {stability_change} reached after {i+1} iterations"
+                            f"Convergence with a change in stability of {stability_change} reached after {i + 1} iterations"
                         )
                         break
 
