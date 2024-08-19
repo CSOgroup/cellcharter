@@ -167,7 +167,7 @@ def _remove_dangling_branches(graph, min_ratio=0.05):
 
 
 def _longest_path_from_node(graph, u):
-    visited = {i: False for i in list(graph.nodes)}
+    visited = dict.fromkeys(graph.nodes)
     distance = {i: -1 for i in list(graph.nodes)}
     idx2node = dict(enumerate(graph.nodes))
 
