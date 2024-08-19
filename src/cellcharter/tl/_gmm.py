@@ -9,7 +9,6 @@ import pandas as pd
 import scipy.sparse as sps
 import torch
 from pytorch_lightning import Trainer
-from torchgmm import set_logging_level
 from torchgmm.base.data import (
     DataLoader,
     TensorLike,

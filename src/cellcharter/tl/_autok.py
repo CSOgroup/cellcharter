@@ -86,7 +86,7 @@ class ClusterAutoK:
         self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
         self.stability = []
 
-    def fit(self, adata: ad.AnnData, use_rep: str = 'X_cellcharter'):
+    def fit(self, adata: ad.AnnData, use_rep: str = "X_cellcharter"):
         """
         Cluster data multiple times for each number of clusters (K) in the selected range and compute the average stability for each them.
 
@@ -97,19 +97,20 @@ class ClusterAutoK:
         use_rep
             Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
         """
-        
+
         if use_rep not in adata.obsm:
             raise ValueError(f"{use_rep} not found in adata.obsm. If you want to use adata.X, set use_rep=None")
 
         X = adata.obsm[use_rep] if use_rep is not None else adata.X
-
 
         self.labels = defaultdict(list)
         self.best_models = {}
 
         random_state = self.model_params.pop("random_state", 0)
 
-        if ("trainer_params" not in self.model_params) or ("enable_progress_bar" not in self.model_params["trainer_params"]):
+        if ("trainer_params" not in self.model_params) or (
+            "enable_progress_bar" not in self.model_params["trainer_params"]
+        ):
             self.model_params["trainer_params"] = {"enable_progress_bar": False}
 
         previous_stability = None
@@ -176,10 +177,10 @@ class ClusterAutoK:
         stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
-    
+
     @property
     def peaks(self) -> List[int]:
-        """ Find the peaks in the stability curve. """
+        """Find the peaks in the stability curve."""
         if self.max_runs <= 1:
             raise ValueError("Cannot compute stability with max_runs <= 1")
         stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
