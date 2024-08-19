@@ -76,7 +76,7 @@ class GaussianMixture(TorchGaussianMixture):
         n_clusters: int = 1,
         *,
         covariance_type: str = "full",
-        init_strategy: str = "kmeans++",
+        init_strategy: str = "kmeans",
         init_means: torch.Tensor = None,
         convergence_tolerance: float = 0.001,
         covariance_regularization: float = 1e-06,
@@ -260,7 +260,7 @@ class Cluster(GaussianMixture):
         n_clusters: int = 1,
         *,
         covariance_type: str = "full",
-        init_strategy: str = "kmeans++",
+        init_strategy: str = "kmeans",
         init_means: torch.Tensor = None,
         convergence_tolerance: float = 0.001,
         covariance_regularization: float = 1e-06,
@@ -295,11 +295,12 @@ class Cluster(GaussianMixture):
 
         X = adata.X if use_rep is None else adata.obsm[use_rep]
 
-        set_logging_level(logging.WARNING)
+        logging_level = logging.getLogger("lightning.pytorch").getEffectiveLevel()
+        logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
 
         super().fit(X)
 
-        set_logging_level(logging_level)
+        logging.getLogger("lightning.pytorch").setLevel(logging_level)
 
         adata.uns["_cellcharter"] = {k: v for k, v in self.get_params().items() if k != "init_means"}
 

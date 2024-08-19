@@ -15,11 +15,10 @@ from typing import Any, Dict, List
 import anndata as ad
 import numpy as np
 import pandas as pd
+from scipy.signal import find_peaks
 from sklearn.metrics import fowlkes_mallows_score, mean_absolute_percentage_error
-from torchgmm import set_logging_level
 from torchgmm.base.utils.path import PathType
 from tqdm.auto import tqdm
-
 
 import cellcharter as cc
 
@@ -98,19 +97,20 @@ class ClusterAutoK:
         use_rep
             Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model. If ``None``, uses :attr:`anndata.AnnData.X`.
         """
-        logging_level = logging.root.level
         
         if use_rep not in adata.obsm:
             raise ValueError(f"{use_rep} not found in adata.obsm. If you want to use adata.X, set use_rep=None")
 
         X = adata.obsm[use_rep] if use_rep is not None else adata.X
 
-        set_logging_level(logging.ERROR)
 
         self.labels = defaultdict(list)
         self.best_models = {}
 
         random_state = self.model_params.pop("random_state", 0)
+
+        if ("trainer_params" not in self.model_params) or ("enable_progress_bar" not in self.model_params["trainer_params"]):
+            self.model_params["trainer_params"] = {"enable_progress_bar": False}
 
         previous_stability = None
         for i in range(self.max_runs):
@@ -118,9 +118,13 @@ class ClusterAutoK:
             new_labels = {}
 
             for k in tqdm(self.n_clusters, disable=(len(self.n_clusters) == 1)):
+                logging_level = logging.getLogger("lightning.pytorch").getEffectiveLevel()
+                logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
                 clustering = self.model_class(n_clusters=k, random_state=i + random_state, **self.model_params)
                 clustering.fit(X)
                 new_labels[k] = clustering.predict(X)
+
+                logging.getLogger("lightning.pytorch").setLevel(logging_level)
 
                 if (k not in self.best_models.keys()) or (clustering.nll_ < self.best_models[k].nll_):
                     self.best_models[k] = clustering
@@ -156,7 +160,6 @@ class ClusterAutoK:
             self.stability = self._mirror_stability(self.stability)
         else:
             self.stability = None
-        set_logging_level(logging_level)
 
     def _mirror_stability(self, stability):
         stability = [
@@ -173,6 +176,15 @@ class ClusterAutoK:
         stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
+    
+    @property
+    def peaks(self) -> List[int]:
+        """ Find the peaks in the stability curve. """
+        if self.max_runs <= 1:
+            raise ValueError("Cannot compute stability with max_runs <= 1")
+        stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
+        peaks, _ = find_peaks(stability_mean)
+        return np.array(self.n_clusters[1:-1])[peaks]
 
     def predict(self, adata: ad.AnnData, use_rep: str = None, k: int = None) -> pd.Categorical:
         """
