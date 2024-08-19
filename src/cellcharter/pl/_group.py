@@ -215,7 +215,7 @@ def _enrichment_legend(
             labels[-1] = f">{size_threshold:.1f}"
 
     handles_list.extend([empty_handle] + handles)
-    labels_list.extend(["log2 fold change"] + labels)
+    labels_list.extend(["log2 FC"] + labels)
 
     return handles_list, labels_list
 
