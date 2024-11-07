@@ -14,4 +14,5 @@
     tl.elongation
     tl.linearity
     tl.purity
+    tl.TRVAE
 ```
