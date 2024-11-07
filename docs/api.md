@@ -27,6 +27,7 @@
 
     tl.Cluster
     tl.ClusterAutoK
+    tl.TRVAE
 ```
 
 ## Plotting
