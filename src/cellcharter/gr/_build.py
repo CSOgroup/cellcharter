@@ -73,6 +73,18 @@ def remove_long_links(
     else:
         adata.uns[neighs_key]["params"]["radius"] = threshold
 
+def _remove_intra_cluster_links(labels, adjacency):
+    target_labels = np.array(labels.iloc[adjacency.indices])
+    source_labels = np.array(
+        labels.iloc[np.repeat(np.arange(adjacency.indptr.shape[0] - 1), np.diff(adjacency.indptr))]
+    )
+
+    inter_cluster_mask = (source_labels != target_labels).astype(int)
+
+    adjacency.data *= inter_cluster_mask
+    adjacency.eliminate_zeros()
+    
+    return adjacency
 
 @d.dedent
 def remove_intra_cluster_links(
@@ -118,17 +130,7 @@ def remove_intra_cluster_links(
     conns = adata.obsp[connectivity_key].copy() if copy else adata.obsp[connectivity_key]
     dists = adata.obsp[distances_key].copy() if copy else adata.obsp[distances_key]
 
-    # ToDo: compute inter_cluster_mask only on conns and apply mask to both matrices
-    for matrix in [conns, dists]:
-        target_clusters = np.array(adata.obs[cluster_key].iloc[matrix.indices])
-        source_clusters = np.array(
-            adata.obs[cluster_key].iloc[np.repeat(np.arange(matrix.indptr.shape[0] - 1), np.diff(matrix.indptr))]
-        )
-
-        inter_cluster_mask = (source_clusters != target_clusters).astype(int)
-
-        matrix.data *= inter_cluster_mask
-        matrix.eliminate_zeros()
+    conns, dists = [_remove_intra_cluster_links(adata.obs[cluster_key], adjacency) for adjacency in [conns, dists]]
 
     if copy:
         return conns, dists
