@@ -187,11 +187,11 @@ def nhood_enrichment(
     pvalues
         If `True`, compute the p-values for each neighborhood enrichment value using permutation of the cluster labels.
     n_perms
-        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues is True`.
+        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues` is `True`.
     n_jobs
-        Number of jobs to run in parallel if `pvalues is True`.
+        Number of jobs to run in parallel if `pvalues` is `True`.
     batch_size
-        Number of permutations to run in each batch if `pvalues is True`.
+        Number of permutations to run in each batch if `pvalues` is `True`.
     %(copy)s
     observed_expected
         If `True`, return the observed and expected neighborhood proportions.
@@ -200,7 +200,7 @@ def nhood_enrichment(
     -------
     If ``copy = True``, returns a :class:`dict` with the following keys:
         - ``'enrichment'`` - the neighborhood enrichment.
-        - ``'pvalue'`` - the enrichment pvalues (if `pvalues is True`).
+        - ``'pvalue'`` - the enrichment pvalues (if `pvalues` is `True`).
         - ``'observed'`` - the observed neighborhood proportions (if `observed_expected is True`).
         - ``'expected'`` - the expected neighborhood proportions (if `observed_expected is True`).
 
@@ -356,11 +356,11 @@ def diff_nhood_enrichment(
     pvalues
         If `True`, compute the p-values for each differential neighborhood enrichment through permutation of the condition key for each Z-dimension.
     library_key
-        If multiple library_id, column in anndata.AnnData.obs which stores mapping between library_id and obs. Used only if `pvalues is True` to permute the condition labels.
+        If multiple library_id, column in anndata.AnnData.obs which stores mapping between library_id and obs. Used only if `pvalues` is `True` to permute the condition labels.
     n_perms
-        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues is True`.
+        Number of permutations to use to compute the expected neighborhood enrichment if `pvalues` is `True`.
     n_jobs
-        Number of jobs to run in parallel if `pvalues is True`. `-1` means using all processors.
+        Number of jobs to run in parallel if `pvalues` is `True`. `-1` means using all processors.
 
     %(copy)s
     nhood_kwargs
@@ -375,7 +375,7 @@ def diff_nhood_enrichment(
     If ``copy = True``, returns a :class:`dict` of all pairwise differential neighborhood enrichments between conditions stored as ``{condition1}_{condition2}``.
     The differential neighborhood enrichment is a :class:`dict` with the following keys:
         - ``'enrichment'`` - the differential neighborhood enrichment.
-        - ``'pvalue'`` - the enrichment pvalues (if `pvalues is True`).
+        - ``'pvalue'`` - the enrichment pvalues (if `pvalues` is `True`).
 
     """
     connectivity_key = Key.obsp.spatial_conn(connectivity_key)
