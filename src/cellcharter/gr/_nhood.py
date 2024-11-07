@@ -395,7 +395,6 @@ def diff_nhood_enrichment(
     %(copy)s
     nhood_kwargs
         Keyword arguments for :func:`gr.nhood_enrichment`. The following arguments are not allowed:
-            - ``'observed_expected'``
             - ``n_perms``
             - ``pvalues``
             - ``n_jobs``

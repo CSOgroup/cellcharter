@@ -25,7 +25,7 @@ urls.Documentation = "https://cellcharter.readthedocs.io/"
 urls.Source = "https://github.com/CSOgroup/cellcharter"
 urls.Home-page = "https://github.com/CSOgroup/cellcharter"
 dependencies = [
-    "anndata",
+    "anndata < 0.11.0",
     "scikit-learn",
     "squidpy",
     "torchgmm",
