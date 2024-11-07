@@ -12,7 +12,45 @@ try:
     from scarches.models.base._utils import _validate_var_names
 except ImportError:
 
-    class TRVAE:  # noqa: D101
+    class TRVAE:
+        """
+        scArches\'s trVAE model adapted to image-based proteomics data.
+
+        The last ReLU layer of the neural network is removed to allow for continuous and real output values
+
+        Parameters
+        ----------
+        adata: `~anndata.AnnData`
+            Annotated data matrix. Has to be count data for 'nb' and 'zinb' loss and normalized log transformed data
+            for 'mse' loss.
+        condition_key: String
+            column name of conditions in `adata.obs` data frame.
+        conditions: List
+            List of Condition names that the used data will contain to get the right encoding when used after reloading.
+        hidden_layer_sizes: List
+            A list of hidden layer sizes for encoder network. Decoder network will be the reversed order.
+        latent_dim: Integer
+            Bottleneck layer (z) size.
+        dr_rate: Float
+            Dropout rate applied to all layers, if `dr_rate==0` no dropout will be applied.
+        use_mmd: Boolean
+            If 'True' an additional MMD loss will be calculated on the latent dim. 'z' or the first decoder layer 'y'.
+        mmd_on: String
+            Choose on which layer MMD loss will be calculated on if 'use_mmd=True': 'z' for latent dim or 'y' for first
+            decoder layer.
+        mmd_boundary: Integer or None
+            Choose on how many conditions the MMD loss should be calculated on. If 'None' MMD will be calculated on all
+            conditions.
+        recon_loss: String
+            Definition of Reconstruction-Loss-Method, 'mse', 'nb' or 'zinb'.
+        beta: Float
+            Scaling Factor for MMD loss
+        use_bn: Boolean
+            If `True` batch normalization will be applied to layers.
+        use_ln: Boolean
+            If `True` layer normalization will be applied to layers.
+        """
+
         def __init__(
             self,
             adata: AnnData,
@@ -32,13 +70,29 @@ except ImportError:
             raise ImportError("scarches is not installed. Please install scarches to use this method.")
 
         @classmethod
-        def load(cls, dir_path: str, adata: Optional[AnnData] = None, map_location: Optional[str] = None):  # noqa: D102
+        def load(cls, dir_path: str, adata: Optional[AnnData] = None, map_location: Optional[str] = None):
+            """
+            Instantiate a model from the saved output.
+
+            Parameters
+            ----------
+            dir_path
+                Path to saved outputs.
+            adata
+                AnnData object.
+                If None, will check for and load anndata saved with the model.
+            map_location
+                Location where all tensors should be loaded (e.g., `torch.device('cpu')`)
+            Returns
+            -------
+                Model with loaded state dictionaries.
+            """
             raise ImportError("scarches is not installed. Please install scarches to use this method.")
 
 else:
 
     class TRVAE(scaTRVAE):
-        r"""
+        """
         scArches\'s trVAE model adapted to image-based proteomics data.
 
         The last ReLU layer of the neural network is removed to allow for continuous and real output values
