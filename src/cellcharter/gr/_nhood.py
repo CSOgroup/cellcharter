@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from itertools import combinations
 from functools import partial
+from itertools import combinations
 
 import numpy as np
 import pandas as pd
-from anndata import AnnData
 import scipy.sparse as sp
+from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
 from squidpy._docs import d
 from squidpy.gr._utils import _assert_categorical_obs, _assert_connectivity_key
 from tqdm.auto import tqdm
+
 from cellcharter.gr._build import _remove_intra_cluster_links
 
 
@@ -56,6 +57,7 @@ def _expected_n_clusters_links(adj, labels, only_inter=False, symmetric=True):
     exp = pd.DataFrame(exp, columns=labels_unique, index=labels_unique)
     return exp
 
+
 def _observed_permuted(adj, labels, observed, symmetric=True, batch_size=1):
     results = []
     for _ in range(batch_size):
@@ -66,6 +68,7 @@ def _observed_permuted(adj, labels, observed, symmetric=True, batch_size=1):
         counts_neg = permuted.values[observed.values < 0] > observed.values[observed.values < 0]
         results.append((permuted, counts_pos, counts_neg))
     return results
+
 
 def _nhood_enrichment(
     adj,
@@ -81,7 +84,7 @@ def _nhood_enrichment(
 ):
     if only_inter:
         adj = _remove_intra_cluster_links(labels, adj)
-    
+
     cluster_categories = labels.cat.categories
 
     observed = _observed_n_clusters_links(
@@ -100,7 +103,7 @@ def _nhood_enrichment(
     else:
         counts = np.zeros_like(observed.values)
         expected = np.zeros_like(observed.values)
-        
+
         if n_jobs == 1:
             with tqdm(total=n_perms) as pbar:
                 for _ in range(n_perms):
@@ -112,12 +115,14 @@ def _nhood_enrichment(
                         pbar.update(1)
         else:
             n_batches = (n_perms + batch_size - 1) // batch_size
-        
-            worker = partial(_observed_permuted, adj, labels=labels, observed=observed, symmetric=symmetric, batch_size=batch_size)
+
+            worker = partial(
+                _observed_permuted, adj, labels=labels, observed=observed, symmetric=symmetric, batch_size=batch_size
+            )
             with ProcessPoolExecutor(max_workers=n_jobs) as executor:
                 with tqdm(total=n_perms) as pbar:
                     futures = [executor.submit(worker) for _ in range(n_batches)]
-                    
+
                     for future in as_completed(futures):
                         batch_results = future.result()
                         for permuted, counts_pos, counts_neg in batch_results:
@@ -243,11 +248,12 @@ def _generate_sample_permutations(samples1, samples2, n_perms):
     """Generator function to yield sample permutations one at a time."""
     all_samples = np.concatenate((samples1, samples2))
     n_samples1 = len(samples1)
-    
+
     for _ in range(n_perms):
         # Generate one permutation at a time
         perm = np.random.permutation(all_samples)
         yield perm[:n_samples1]
+
 
 def _observed_expected_diff_enrichment(enrichments, condition1, condition2):
     observed = enrichments[condition1] - enrichments[condition2]
@@ -257,24 +263,26 @@ def _observed_expected_diff_enrichment(enrichments, condition1, condition2):
 def _diff_nhood_enrichment(
     labels: pd.Categorical,
     conditions: pd.Categorical,
-    condition_groups: tuple[str, str], 
-    connectivities: sp.csr_matrix, 
-    pvalues: bool = False, 
-    libraries: pd.Categorical | None = None, 
-    n_perms: int = 1000, 
-    n_jobs: int = 1, 
-    **nhood_kwargs
+    condition_groups: tuple[str, str],
+    connectivities: sp.csr_matrix,
+    pvalues: bool = False,
+    libraries: pd.Categorical | None = None,
+    n_perms: int = 1000,
+    n_jobs: int = 1,
+    **nhood_kwargs,
 ):
     enrichments = {}
     for condition in condition_groups:
         condition_mask = conditions == condition
-        
+
         labels_condition = labels[condition_mask]
         labels_condition = labels_condition.cat.set_categories(labels.cat.categories)
-        
+
         connectivities_condition = connectivities[condition_mask, :][:, condition_mask]
-        
-        enrichments[condition] = _nhood_enrichment(connectivities_condition, labels_condition, **nhood_kwargs)["enrichment"]
+
+        enrichments[condition] = _nhood_enrichment(connectivities_condition, labels_condition, **nhood_kwargs)[
+            "enrichment"
+        ]
 
     result = {}
     condition_pairs = combinations(condition_groups, 2)
@@ -296,30 +304,52 @@ def _diff_nhood_enrichment(
                 with tqdm(total=n_perms) as pbar:
                     for samples_condition1_permuted in sample_perm_generator:
                         condition_permuted = pd.Categorical(libraries.isin(samples_condition1_permuted).astype(int))
-                        expected_diff_enrichment = _diff_nhood_enrichment(labels, condition_permuted, [0, 1], libraries, connectivities, pvalues=False, **nhood_kwargs)["0_1"]["enrichment"]
-                        
-                        counts_pos = expected_diff_enrichment.values[observed_diff_enrichment.values > 0] < observed_diff_enrichment.values[observed_diff_enrichment.values > 0]
-                        counts_neg = expected_diff_enrichment.values[observed_diff_enrichment.values < 0] > observed_diff_enrichment.values[observed_diff_enrichment.values < 0]
-                        
+                        expected_diff_enrichment = _diff_nhood_enrichment(
+                            labels, condition_permuted, [0, 1], libraries, connectivities, pvalues=False, **nhood_kwargs
+                        )["0_1"]["enrichment"]
+
+                        counts_pos = (
+                            expected_diff_enrichment.values[observed_diff_enrichment.values > 0]
+                            < observed_diff_enrichment.values[observed_diff_enrichment.values > 0]
+                        )
+                        counts_neg = (
+                            expected_diff_enrichment.values[observed_diff_enrichment.values < 0]
+                            > observed_diff_enrichment.values[observed_diff_enrichment.values < 0]
+                        )
+
                         result[result_key]["pvalue_counts"][observed_diff_enrichment.values > 0] += counts_pos
                         result[result_key]["pvalue_counts"][observed_diff_enrichment.values < 0] += counts_neg
                         pbar.update(1)
             else:
-                worker = partial(_diff_nhood_enrichment, labels=labels, condition_groups=[0, 1], libraries=libraries, connectivities=connectivities, pvalues=False, **nhood_kwargs)
+                worker = partial(
+                    _diff_nhood_enrichment,
+                    labels=labels,
+                    condition_groups=[0, 1],
+                    libraries=libraries,
+                    connectivities=connectivities,
+                    pvalues=False,
+                    **nhood_kwargs,
+                )
                 with ProcessPoolExecutor(max_workers=n_jobs) as executor:
                     with tqdm(total=n_perms) as pbar:
                         futures = []
                         for _ in range(n_perms):
                             condition_permuted = pd.Categorical(libraries.isin(next(sample_perm_generator)).astype(int))
                             futures.append(executor.submit(worker, conditions=condition_permuted))
-                            
+
                         for future in as_completed(futures):
                             future_result = future.result()
                             expected_diff_enrichment = future_result["0_1"]["enrichment"]
-                            
-                            counts_pos = expected_diff_enrichment.values[observed_diff_enrichment.values > 0] < observed_diff_enrichment.values[observed_diff_enrichment.values > 0]
-                            counts_neg = expected_diff_enrichment.values[observed_diff_enrichment.values < 0] > observed_diff_enrichment.values[observed_diff_enrichment.values < 0]
-                            
+
+                            counts_pos = (
+                                expected_diff_enrichment.values[observed_diff_enrichment.values > 0]
+                                < observed_diff_enrichment.values[observed_diff_enrichment.values > 0]
+                            )
+                            counts_neg = (
+                                expected_diff_enrichment.values[observed_diff_enrichment.values < 0]
+                                > observed_diff_enrichment.values[observed_diff_enrichment.values < 0]
+                            )
+
                             result[result_key]["pvalue_counts"][observed_diff_enrichment.values > 0] += counts_pos
                             result[result_key]["pvalue_counts"][observed_diff_enrichment.values < 0] += counts_neg
                             pbar.update(1)
@@ -382,7 +412,6 @@ def diff_nhood_enrichment(
     _assert_connectivity_key(adata, connectivity_key)
     _assert_categorical_obs(adata, key=cluster_key)
     _assert_categorical_obs(adata, key=condition_key)
-    
 
     if condition_groups is None:
         condition_groups = adata.obs[condition_key].cat.categories
@@ -393,23 +422,27 @@ def diff_nhood_enrichment(
         )
 
     diff_nhood = _diff_nhood_enrichment(
-        labels=adata.obs[cluster_key], 
-        conditions=adata.obs[condition_key], 
-        condition_groups=condition_groups, 
-        connectivities=adata.obsp[connectivity_key], 
+        labels=adata.obs[cluster_key],
+        conditions=adata.obs[condition_key],
+        condition_groups=condition_groups,
+        connectivities=adata.obsp[connectivity_key],
         pvalues=pvalues,
-        libraries=adata.obs[library_key] if pvalues else None,  
-        n_perms=n_perms, 
-        n_jobs=n_jobs, 
-        **nhood_kwargs
+        libraries=adata.obs[library_key] if pvalues else None,
+        n_perms=n_perms,
+        n_jobs=n_jobs,
+        **nhood_kwargs,
     )
 
     result = {}
     for condition_pair_key in diff_nhood.keys():
         result[condition_pair_key] = {}
-        result[condition_pair_key]['enrichment'] = diff_nhood[condition_pair_key]["enrichment"]
+        result[condition_pair_key]["enrichment"] = diff_nhood[condition_pair_key]["enrichment"]
         if pvalues:
-            result[condition_pair_key]["pvalue"] = pd.DataFrame(1 - (diff_nhood[condition_pair_key]["pvalue_counts"] / n_perms), columns=diff_nhood[condition_pair_key]["enrichment"].columns, index=diff_nhood[condition_pair_key]["enrichment"].index)
+            result[condition_pair_key]["pvalue"] = pd.DataFrame(
+                1 - (diff_nhood[condition_pair_key]["pvalue_counts"] / n_perms),
+                columns=diff_nhood[condition_pair_key]["enrichment"].columns,
+                index=diff_nhood[condition_pair_key]["enrichment"].index,
+            )
 
     if copy:
         return result

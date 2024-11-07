@@ -1,6 +1,6 @@
 import numpy as np
-from anndata import AnnData
 import pytest
+from anndata import AnnData
 
 import cellcharter as cc
 
@@ -48,41 +48,28 @@ class TestDiffNhoodEnrichment:
 
     def test_symmetric_vs_nonsymmetric(self, codex_adata: AnnData):
         # Test symmetric case
-        cc.gr.diff_nhood_enrichment(
-            codex_adata,
-            cluster_key=_CLUSTER_KEY,
-            condition_key=_CONDITION_KEY,
-            symmetric=True
-        )
+        cc.gr.diff_nhood_enrichment(codex_adata, cluster_key=_CLUSTER_KEY, condition_key=_CONDITION_KEY, symmetric=True)
         symmetric_result = codex_adata.uns[key].copy()
         del codex_adata.uns[key]
 
         # Test non-symmetric case
         cc.gr.diff_nhood_enrichment(
-            codex_adata,
-            cluster_key=_CLUSTER_KEY,
-            condition_key=_CONDITION_KEY,
-            symmetric=False
+            codex_adata, cluster_key=_CLUSTER_KEY, condition_key=_CONDITION_KEY, symmetric=False
         )
         nonsymmetric_result = codex_adata.uns[key]
-        
+
         # Results should be different when symmetric=False
         for pair_key in symmetric_result:
             assert not np.allclose(
-                symmetric_result[pair_key]["enrichment"],
-                nonsymmetric_result[pair_key]["enrichment"],
-                equal_nan=True
+                symmetric_result[pair_key]["enrichment"], nonsymmetric_result[pair_key]["enrichment"], equal_nan=True
             )
-        
+
         del codex_adata.uns[key]
 
     def test_condition_groups(self, codex_adata: AnnData):
         conditions = codex_adata.obs[_CONDITION_KEY].cat.categories[:2]
         cc.gr.diff_nhood_enrichment(
-            codex_adata,
-            cluster_key=_CLUSTER_KEY,
-            condition_key=_CONDITION_KEY,
-            condition_groups=conditions
+            codex_adata, cluster_key=_CLUSTER_KEY, condition_key=_CONDITION_KEY, condition_groups=conditions
         )
 
         # Should only have one comparison
@@ -95,19 +82,11 @@ class TestDiffNhoodEnrichment:
     def test_invalid_inputs(self, codex_adata: AnnData):
         # Test invalid cluster key
         with pytest.raises(KeyError):
-            cc.gr.diff_nhood_enrichment(
-                codex_adata,
-                cluster_key="invalid_key",
-                condition_key=_CONDITION_KEY
-            )
+            cc.gr.diff_nhood_enrichment(codex_adata, cluster_key="invalid_key", condition_key=_CONDITION_KEY)
 
         # Test invalid condition key
         with pytest.raises(KeyError):
-            cc.gr.diff_nhood_enrichment(
-                codex_adata,
-                cluster_key=_CLUSTER_KEY,
-                condition_key="invalid_key"
-            )
+            cc.gr.diff_nhood_enrichment(codex_adata, cluster_key=_CLUSTER_KEY, condition_key="invalid_key")
 
         # Test invalid library key when using pvalues
         with pytest.raises(KeyError):
@@ -116,16 +95,13 @@ class TestDiffNhoodEnrichment:
                 cluster_key=_CLUSTER_KEY,
                 condition_key=_CONDITION_KEY,
                 library_key="invalid_key",
-                pvalues=True
+                pvalues=True,
             )
 
     def test_copy_return(self, codex_adata: AnnData):
         # Test copy=True returns results without modifying adata
         result = cc.gr.diff_nhood_enrichment(
-            codex_adata,
-            cluster_key=_CLUSTER_KEY,
-            condition_key=_CONDITION_KEY,
-            copy=True
+            codex_adata, cluster_key=_CLUSTER_KEY, condition_key=_CONDITION_KEY, copy=True
         )
 
         assert key not in codex_adata.uns

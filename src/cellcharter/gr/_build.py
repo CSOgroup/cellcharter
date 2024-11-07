@@ -73,6 +73,7 @@ def remove_long_links(
     else:
         adata.uns[neighs_key]["params"]["radius"] = threshold
 
+
 def _remove_intra_cluster_links(labels, adjacency):
     target_labels = np.array(labels.iloc[adjacency.indices])
     source_labels = np.array(
@@ -83,8 +84,9 @@ def _remove_intra_cluster_links(labels, adjacency):
 
     adjacency.data *= inter_cluster_mask
     adjacency.eliminate_zeros()
-    
+
     return adjacency
+
 
 @d.dedent
 def remove_intra_cluster_links(
@@ -130,7 +132,7 @@ def remove_intra_cluster_links(
     conns = adata.obsp[connectivity_key].copy() if copy else adata.obsp[connectivity_key]
     dists = adata.obsp[distances_key].copy() if copy else adata.obsp[distances_key]
 
-    conns, dists = [_remove_intra_cluster_links(adata.obs[cluster_key], adjacency) for adjacency in [conns, dists]]
+    conns, dists = (_remove_intra_cluster_links(adata.obs[cluster_key], adjacency) for adjacency in [conns, dists])
 
     if copy:
         return conns, dists
