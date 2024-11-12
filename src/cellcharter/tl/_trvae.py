@@ -13,7 +13,7 @@ try:
 except ImportError:
 
     class TRVAE:
-        """
+        r"""
         scArches\'s trVAE model adapted to image-based proteomics data.
 
         The last ReLU layer of the neural network is removed to allow for continuous and real output values
@@ -92,7 +92,7 @@ except ImportError:
 else:
 
     class TRVAE(scaTRVAE):
-        """
+        r"""
         scArches\'s trVAE model adapted to image-based proteomics data.
 
         The last ReLU layer of the neural network is removed to allow for continuous and real output values
