@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from itertools import combinations
 from pathlib import Path
+from typing import Union
 
 import anndata as ad
 import geopandas
@@ -15,7 +16,6 @@ import spatialdata_plot  # noqa: F401
 from anndata import AnnData
 from scipy.stats import ttest_ind
 from squidpy._docs import d
-from typing import Union
 
 from ._utils import adjust_box_widths
 
