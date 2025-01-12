@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -15,7 +16,7 @@ from shapely import geometry
 from shapely.ops import polygonize, unary_union
 from skimage.morphology import skeletonize
 from squidpy._docs import d
-import warnings
+
 
 def _alpha_shape(coords, alpha):
     """
@@ -233,6 +234,7 @@ def _rasterize(boundary, height=1000):
     poly = shapely.affinity.scale(poly, scale_factor, scale_factor, origin=(0, 0, 0))
     return features.rasterize([poly], out_shape=(height, int(height * (maxx - minx) / (maxy - miny)))), scale_factor
 
+
 def linearity(
     adata: AnnData,
     cluster_key: str = "component",
@@ -254,6 +256,7 @@ def linearity(
         min_ratio=min_ratio,
         copy=copy,
     )
+
 
 @d.dedent
 def linearity_metric(
@@ -333,6 +336,7 @@ def elongation(
         copy=copy,
     )
 
+
 @d.dedent
 def elongation_metric(
     adata: AnnData,
@@ -410,6 +414,7 @@ def curl(
         copy=copy,
     )
 
+
 @d.dedent
 def curl_metric(
     adata: AnnData,
@@ -445,6 +450,7 @@ def curl_metric(
         return curl_score
     adata.uns[f"shape_{cluster_key}"][out_key] = curl_score
 
+
 def purity_metric(
     adata: AnnData,
     cluster_key: str = "component",
@@ -466,6 +472,7 @@ def purity_metric(
         exterior=exterior,
         copy=copy,
     )
+
 
 @d.dedent
 def purity(

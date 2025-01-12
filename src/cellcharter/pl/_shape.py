@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from itertools import combinations
 from pathlib import Path
 from typing import Union
 
@@ -10,12 +9,12 @@ import geopandas
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 import seaborn as sns
 import spatialdata as sd
 import spatialdata_plot  # noqa: F401
 from anndata import AnnData
 from squidpy._docs import d
-import scipy.sparse as sps
 
 from ._utils import adjust_box_widths
 
@@ -250,7 +249,7 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
         dodge=True,
         hue_order=hue_order,
     )
-    
+
     if len(data[hue].unique()) > 1:
         handles, labels = ax.get_legend_handles_labels()
         if len(handles) > 1:
@@ -266,6 +265,7 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
     plt.ylim(-0.05, 1.05)
     plt.title(title)
     plt.show()
+
 
 @d.dedent
 def shape_metrics(
@@ -311,7 +311,7 @@ def shape_metrics(
         metrics = [metrics]
     elif isinstance(metrics, tuple):
         metrics = list(metrics)
-    
+
     if cluster_id is not None and not isinstance(cluster_id, list) and not isinstance(cluster_id, np.ndarray):
         cluster_id = [cluster_id]
 
@@ -330,12 +330,8 @@ def shape_metrics(
     if cluster_key is not None:
         keys.append(cluster_key)
 
-    metrics_df = (adata.obs[[component_key] + keys]
-        .drop_duplicates()
-        .dropna()
-        .set_index(component_key))
+    metrics_df = adata.obs[[component_key] + keys].drop_duplicates().dropna().set_index(component_key)
 
-    
     for metric in metrics:
         metrics_df[metric] = metrics_df.index.map(adata.uns[f"shape_{component_key}"][metric])
 
@@ -353,9 +349,27 @@ def shape_metrics(
 
         if cluster_key is not None:
             plot_shapes(metrics_melted, "metric", "value", cluster_key, cluster_id, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by domain')
+            plot_shapes(
+                metrics_melted,
+                "metric",
+                "value",
+                cluster_key,
+                cluster_id,
+                figsize,
+                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}',
+            )
 
         if condition_key is not None:
             plot_shapes(metrics_melted, "metric", "value", condition_key, condition_groups, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by condition')
+            plot_shapes(
+                metrics_melted,
+                "metric",
+                "value",
+                condition_key,
+                condition_groups,
+                figsize,
+                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}',
+            )
     else:
         for metric in metrics:
             plot_shapes(
