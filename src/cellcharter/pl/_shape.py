@@ -251,7 +251,6 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
         hue_order=hue_order,
     )
     
-    print(data[hue].unique())
     if len(data[hue].unique()) > 1:
         handles, labels = ax.get_legend_handles_labels()
         if len(handles) > 1:
