@@ -15,7 +15,7 @@ from shapely import geometry
 from shapely.ops import polygonize, unary_union
 from skimage.morphology import skeletonize
 from squidpy._docs import d
-
+import warnings
 
 def _alpha_shape(coords, alpha):
     """
@@ -233,9 +233,30 @@ def _rasterize(boundary, height=1000):
     poly = shapely.affinity.scale(poly, scale_factor, scale_factor, origin=(0, 0, 0))
     return features.rasterize([poly], out_shape=(height, int(height * (maxx - minx) / (maxy - miny)))), scale_factor
 
+def linearity(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "linearity",
+    height: int = 1000,
+    min_ratio: float = 0.05,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "linearity is deprecated and will be removed in the next release. " "Please use `linearity_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return linearity_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        height=height,
+        min_ratio=min_ratio,
+        copy=copy,
+    )
 
 @d.dedent
-def linearity(
+def linearity_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "linearity",
@@ -294,8 +315,26 @@ def _elongation(boundary):
     return 1 - minor_axis / major_axis
 
 
-@d.dedent
 def elongation(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "elongation",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "elongation is deprecated and will be removed in the next release. " "Please use `elongation_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return elongation_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        copy=copy,
+    )
+
+@d.dedent
+def elongation_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "elongation",
@@ -353,8 +392,26 @@ def _curl(boundary):
         return 1 - length / fibre_length
 
 
-@d.dedent
 def curl(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "curl",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "curl is deprecated and will be removed in the next release. " "Please use `curl_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return curl_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        copy=copy,
+    )
+
+@d.dedent
+def curl_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "curl",
@@ -388,6 +445,27 @@ def curl(
         return curl_score
     adata.uns[f"shape_{cluster_key}"][out_key] = curl_score
 
+def purity_metric(
+    adata: AnnData,
+    cluster_key: str = "component",
+    library_key: str = "sample",
+    out_key: str = "purity",
+    exterior: bool = False,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "purity is deprecated and will be removed in the next release. " "Please use `purity_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return purity(
+        adata=adata,
+        cluster_key=cluster_key,
+        library_key=library_key,
+        out_key=out_key,
+        exterior=exterior,
+        copy=copy,
+    )
 
 @d.dedent
 def purity(
