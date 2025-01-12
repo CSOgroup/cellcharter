@@ -244,21 +244,23 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
         x=x,
         hue=hue,
         y=y,
-        color="0.08",
+        palette='dark:0.08',
         size=4,
         jitter=0.13,
         dodge=True,
         hue_order=hue_order,
     )
     
+    print(data[hue].unique())
     if len(data[hue].unique()) > 1:
         handles, labels = ax.get_legend_handles_labels()
-        plt.legend(
-            handles[0 : len(data[hue].unique())],
-            labels[0 : len(data[hue].unique())],
-            bbox_to_anchor=(1.0, 1.03),
-            title=hue,
-        )
+        if len(handles) > 1:
+            plt.legend(
+                handles[0 : len(data[hue].unique())],
+                labels[0 : len(data[hue].unique())],
+                bbox_to_anchor=(1.0, 1.03),
+                title=hue,
+            )
     else:
         if ax.get_legend() is not None:
             ax.get_legend().remove()
@@ -351,22 +353,21 @@ def shape_metrics(
         metrics_melted[cluster_key] = metrics_melted[cluster_key].cat.remove_unused_categories()
 
         if cluster_key is not None:
-            plot_shapes(metrics_melted, "metric", "value", cluster_key, cluster_id, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}')
+            plot_shapes(metrics_melted, "metric", "value", cluster_key, cluster_id, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by domain')
 
         if condition_key is not None:
-            plot_shapes(metrics_melted, "metric", "value", condition_key, condition_groups, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}')
+            plot_shapes(metrics_melted, "metric", "value", condition_key, condition_groups, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by condition')
     else:
         for metric in metrics:
-            fig = plt.figure(figsize=figsize)
-            ax = sns.boxplot(
-                data=metrics_df,
-                x=cluster_key,
-                hue=condition_key,
-                y=metric,
-                showfliers=False,
-                # hue_order=[condition1, condition2],
+            plot_shapes(
+                metrics_df,
+                cluster_key if cluster_key is not None else condition_key,
+                metric,
+                condition_key if condition_key is not None else cluster_key,
+                condition_groups if condition_groups is not None else None,
+                figsize,
+                f'Spatial domains: {metric}',
             )
-            plt.show()
 
 
 @d.dedent
