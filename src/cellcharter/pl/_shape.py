@@ -243,7 +243,7 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
         x=x,
         hue=hue,
         y=y,
-        palette='dark:0.08',
+        palette="dark:0.08",
         size=4,
         jitter=0.13,
         dodge=True,
@@ -348,7 +348,15 @@ def shape_metrics(
         metrics_melted[cluster_key] = metrics_melted[cluster_key].cat.remove_unused_categories()
 
         if cluster_key is not None:
-            plot_shapes(metrics_melted, "metric", "value", cluster_key, cluster_id, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by domain')
+            plot_shapes(
+                metrics_melted,
+                "metric",
+                "value",
+                cluster_key,
+                cluster_id,
+                figsize,
+                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by domain',
+            )
             plot_shapes(
                 metrics_melted,
                 "metric",
@@ -360,7 +368,15 @@ def shape_metrics(
             )
 
         if condition_key is not None:
-            plot_shapes(metrics_melted, "metric", "value", condition_key, condition_groups, figsize, f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by condition')
+            plot_shapes(
+                metrics_melted,
+                "metric",
+                "value",
+                condition_key,
+                condition_groups,
+                figsize,
+                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by condition',
+            )
             plot_shapes(
                 metrics_melted,
                 "metric",
@@ -379,7 +395,7 @@ def shape_metrics(
                 condition_key if condition_key is not None else cluster_key,
                 condition_groups if condition_groups is not None else None,
                 figsize,
-                f'Spatial domains: {metric}',
+                f"Spatial domains: {metric}",
             )
 
 
