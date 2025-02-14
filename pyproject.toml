@@ -10,10 +10,10 @@ exclude = [
 
 [project]
 name = "cellcharter"
-version = "0.2.3"
+version = "0.3.3"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
-requires-python = ">=3.8,<3.11"
+requires-python = ">=3.8,<3.13"
 license = {file = "LICENSE"}
 authors = [
     {name = "CSO group"},
@@ -29,10 +29,9 @@ dependencies = [
     "scikit-learn",
     "squidpy",
     "torchgmm",
-    # for debug logging (referenced from the issue template)
     "session-info",
     "spatialdata",
-    "spatialdata-plot >= 0.1.0",
+    "spatialdata-plot >= 0.1.0, < 0.2.8",
     "rasterio",
     "sknw",
     "matplotlib < 3.9.0",
