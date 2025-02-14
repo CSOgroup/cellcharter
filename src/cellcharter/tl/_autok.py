@@ -15,6 +15,7 @@ from typing import Any, Dict, List
 import anndata as ad
 import numpy as np
 import pandas as pd
+from scipy.signal import find_peaks
 from sklearn.metrics import fowlkes_mallows_score, mean_absolute_percentage_error
 from torchgmm import set_logging_level
 from torchgmm.base.utils.path import PathType
@@ -174,6 +175,21 @@ class ClusterAutoK:
         stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
         best_idx = np.argmax(stability_mean)
         return self.n_clusters[best_idx + 1]
+
+    def peaks(self, n_peaks=None) -> List[int]:
+        """
+        Find the peaks in the stability curve.
+
+        Parameters
+        ----------
+        n_peaks
+            Number of peaks to return. If ``None``, returns all peaks.
+        """
+        if self.max_runs <= 1:
+            raise ValueError("Cannot compute stability with max_runs <= 1")
+        stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
+        peaks, _ = find_peaks(stability_mean)
+        return peaks[:n_peaks]
 
     def predict(self, adata: ad.AnnData, use_rep: str = None, k: int = None) -> pd.Categorical:
         """
