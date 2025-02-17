@@ -119,7 +119,7 @@ def boundaries(
     adata_obs = ad.AnnData(X=pd.DataFrame(index=obs.index, columns=adata.var_names), obs=obs)
     adata_obs.obs["region"] = "clusters"
     adata_obs.index = "cluster_" + adata_obs.obs.index
-    adata_obs.obs["instance_id"] = np.arange(len(boundaries))
+    adata_obs.obs["instance_id"] = np.arange(len(boundaries)).astype(str)
     adata_obs.obs[component_key] = pd.Categorical(adata_obs.obs[component_key])
 
     adata = ad.concat((adata, adata_obs), join="outer")
