@@ -14,6 +14,7 @@
 
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
+[![PyPI Downloads](https://static.pepy.tech/badge/cellcharter)](https://pepy.tech/projects/cellcharter)
 
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/CSOgroup/cellcharter/test.yaml?branch=main
 [link-tests]: https://github.com/CSOgroup/cellcharter/actions/workflows/test.yml
