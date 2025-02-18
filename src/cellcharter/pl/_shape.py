@@ -106,7 +106,7 @@ def boundaries(
         for cluster, boundary in adata.uns[f"shape_{component_key}"]["boundary"].items()
         if cluster in clusters
     }
-    gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()))
+    gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()), index=np.arange(len(boundaries)).astype(str))
     adata.obs.loc[adata.obs[component_key] == -1, component_key] = np.nan
     adata.obs.index = "cell_" + adata.obs.index
     adata.obs["instance_id"] = adata.obs.index
@@ -119,7 +119,7 @@ def boundaries(
     adata_obs = ad.AnnData(X=pd.DataFrame(index=obs.index, columns=adata.var_names), obs=obs)
     adata_obs.obs["region"] = "clusters"
     adata_obs.index = "cluster_" + adata_obs.obs.index
-    adata_obs.obs["instance_id"] = np.arange(len(boundaries))
+    adata_obs.obs["instance_id"] = np.arange(len(boundaries)).astype(str)
     adata_obs.obs[component_key] = pd.Categorical(adata_obs.obs[component_key])
 
     adata = ad.concat((adata, adata_obs), join="outer")

@@ -21,10 +21,10 @@ def _observed_n_clusters_links(adj, labels, symmetric=True):
     labels_unique = labels.cat.categories
     obs = np.zeros((len(labels_unique), len(labels_unique)))
     for i, l1 in enumerate(labels_unique):
-        total_cluster_links = adj[labels == l1]
+        total_cluster_links = adj[labels.values == l1]
 
         for j, l2 in enumerate(labels_unique):
-            other_cluster_links = total_cluster_links[:, labels == l2]
+            other_cluster_links = total_cluster_links[:, labels.values == l2]
 
             if not symmetric:
                 obs[i, j] = np.sum(other_cluster_links) / np.sum(total_cluster_links)
@@ -274,6 +274,8 @@ def _diff_nhood_enrichment(
     enrichments = {}
     for condition in condition_groups:
         condition_mask = conditions == condition
+        if isinstance(condition_mask, pd.Series):
+            condition_mask = condition_mask.values
 
         labels_condition = labels[condition_mask]
         labels_condition = labels_condition.cat.set_categories(labels.cat.categories)
