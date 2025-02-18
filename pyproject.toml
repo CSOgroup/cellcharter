@@ -31,6 +31,7 @@ dependencies = [
     "torchgmm >= 0.1.2",
     # for debug logging (referenced from the issue template)
     "session-info",
+    "dask < 2025.1.0",
     "spatialdata < 0.2.6",
     "spatialdata-plot < 0.2.8",
     "rasterio",
