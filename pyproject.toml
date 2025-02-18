@@ -27,12 +27,12 @@ urls.Home-page = "https://github.com/CSOgroup/cellcharter"
 dependencies = [
     "anndata",
     "scikit-learn",
-    "squidpy >= 1.6.2",
+    "squidpy",
     "torchgmm >= 0.1.2",
     # for debug logging (referenced from the issue template)
     "session-info",
-    "spatialdata",
-    "spatialdata-plot >= 0.1.0",
+    "spatialdata < 0.2.6",
+    "spatialdata-plot < 0.2.8",
     "rasterio",
     "sknw",
     "matplotlib < 3.9.0",
