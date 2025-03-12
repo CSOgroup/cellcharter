@@ -537,14 +537,14 @@ def purity(
 
 
 def normalized_component_contribution_metric(
-        adata: AnnData,
-        neighborhood_key: str,
-        cluster_key: str = "component",
-        library_key: str = "sample",
-        out_key: str = "normalzed_component_count",
-        copy: bool = False,
+    adata: AnnData,
+    neighborhood_key: str,
+    cluster_key: str = "component",
+    library_key: str = "sample",
+    out_key: str = "normalzed_component_count",
+    copy: bool = False,
 ) -> None | dict[int, float]:
-    
+
     return normalized_component_contribution(
         adata=adata,
         neighborhood_key=neighborhood_key,
@@ -553,6 +553,7 @@ def normalized_component_contribution_metric(
         out_key=out_key,
         copy=copy,
     )
+
 
 @d.dedent
 def normalized_component_contribution(
@@ -565,7 +566,7 @@ def normalized_component_contribution(
 ) -> None | dict[int, float]:
     """
     The Normalized Component Contribution (NCC) metric compares a component’s cell count to the average component size in its cellular neighborhood, indicating whether it is larger or smaller than expected given the neighborhood’s total cells and component count.
-    
+
     Parameters
     ----------
     %(adata)s
@@ -586,11 +587,13 @@ def normalized_component_contribution(
         - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
     """
     count = adata.obs[cluster_key].value_counts().to_dict()
-    df = pd.DataFrame(count.items(), columns=[cluster_key, 'count'])
+    df = pd.DataFrame(count.items(), columns=[cluster_key, "count"])
     df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
     df = pd.merge(df, adata.obs[[cluster_key, neighborhood_key]].drop_duplicates().dropna(), on=cluster_key)
-    nbh_counts = adata.obs.groupby([library_key, neighborhood_key]).size().reset_index(name='total_neighborhood_cells_image')
-    df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how='left')
+    nbh_counts = (
+        adata.obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
+    )
+    df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how="left")
 
     unique_counts = (
         adata.obs.groupby([library_key, neighborhood_key])[cluster_key]
@@ -599,9 +602,8 @@ def normalized_component_contribution(
         .rename(columns={cluster_key: "unique_components_neighborhood_image"})
     )
     df = df.merge(unique_counts, on=[library_key, neighborhood_key], how="left")
-    df['ncc'] = df['count'] / df['total_neighborhood_cells_image'] / df['unique_components_neighborhood_image']
+    df["ncc"] = df["count"] / df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"]
 
     if copy:
-        return df.set_index(cluster_key)['ncc'].to_dict()
-    adata.uns[f"shape_{cluster_key}"][out_key] = df.set_index(cluster_key)['ncc'].to_dict()
-
+        return df.set_index(cluster_key)["ncc"].to_dict()
+    adata.uns[f"shape_{cluster_key}"][out_key] = df.set_index(cluster_key)["ncc"].to_dict()
