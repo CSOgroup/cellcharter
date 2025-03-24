@@ -61,7 +61,7 @@ Please refer to the [documentation][link-docs]. In particular, the
 ## Installation
 
 1. Create a conda or pyenv environment
-2. Install Python >= 3.8,<3.13 and [PyTorch](https://pytorch.org) >= 1.12.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first from [here](https://pytorch.org/get-started/locally/).
+2. Install Python >= 3.10,<3.13 and [PyTorch](https://pytorch.org) >= 1.12.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first from [here](https://pytorch.org/get-started/locally/).
 3. Install the library used for dimensionality reduction and batch effect removal according to the data type you are planning to analyze:
     - [scVI](https://github.com/scverse/scvi-tools) for spatial transcriptomics and/or epigenomics data such as 10x Visium and Xenium, Nanostring CosMx, Vizgen MERSCOPE, Stereo-seq, DBiT-seq, MERFISH and seqFISH data.
     - A modified version of [scArches](https://github.com/theislab/scarches)'s TRVAE model for spatial proteomics data such as Akoya CODEX, Lunaphore COMET, CyCIF, IMC and MIBI-TOF data.
