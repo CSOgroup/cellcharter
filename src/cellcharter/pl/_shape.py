@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
-from typing import Union
 
 import anndata as ad
 import geopandas
