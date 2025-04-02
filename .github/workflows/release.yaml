@@ -1,23 +1,24 @@
-name: Check Build
+name: Release
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  release:
+    types: [published]
 
 defaults:
   run:
     # to fail on error in multiline statements (-e), in pipes (-o pipefail), and on unset variables (-u).
     shell: bash -euo pipefail {0}
 
+# Use "trusted publishing", see https://docs.pypi.org/trusted-publishers/
 jobs:
-  package:
+  release:
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cellcharter
+    permissions:
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,5 +30,5 @@ jobs:
           cache-dependency-glob: pyproject.toml
       - name: Build package
         run: uv build
-      - name: Check package
-        run: uvx twine check --strict dist/*.whl
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
