@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from anndata import AnnData, read
+from anndata import AnnData, read_h5ad
 from torch import nn
 
 try:
@@ -219,7 +219,7 @@ else:
             load_adata = adata is None
 
             if os.path.exists(adata_path) and load_adata:
-                adata = read(adata_path)
+                adata = read_h5ad(adata_path)
             elif not os.path.exists(adata_path) and load_adata:
                 raise ValueError("Save path contains no saved anndata and no adata was passed.")
 
