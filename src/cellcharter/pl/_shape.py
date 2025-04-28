@@ -225,26 +225,8 @@ def plot_shape_metrics(
     )
 
 
-def plot_shapes(
-        data, 
-        x, 
-        y, 
-        hue, 
-        hue_order, 
-        fig, 
-        ax, 
-        fontsize: str | int = 14,
-        title: str | None = None
-    ) -> None:
-    new_ax =sns.boxplot(
-        data=data,
-        x=x,
-        hue=hue,
-        y=y,
-        showfliers=False,
-        hue_order=hue_order,
-        ax=ax
-    )
+def plot_shapes(data, x, y, hue, hue_order, fig, ax, fontsize: str | int = 14, title: str | None = None) -> None:
+    new_ax = sns.boxplot(data=data, x=x, hue=hue, y=y, showfliers=False, hue_order=hue_order, ax=ax)
     adjust_box_widths(fig, 0.9)
 
     new_ax = sns.stripplot(
@@ -257,7 +239,7 @@ def plot_shapes(
         jitter=0.13,
         dodge=True,
         hue_order=hue_order,
-        ax=new_ax
+        ax=new_ax,
     )
 
     if len(data[hue].unique()) > 1:
@@ -268,16 +250,16 @@ def plot_shapes(
                 labels[0 : len(data[hue].unique())],
                 bbox_to_anchor=(1.0, 1.03),
                 title=hue,
-                prop={'size': fontsize},
-                title_fontsize=fontsize
+                prop={"size": fontsize},
+                title_fontsize=fontsize,
             )
     else:
         if new_ax.get_legend() is not None:
             new_ax.get_legend().remove()
-    
+
     new_ax.set_ylim(-0.05, 1.05)
-    new_ax.set_title(title, fontdict={'fontsize': fontsize})
-    new_ax.tick_params(axis='both', labelsize=fontsize)
+    new_ax.set_title(title, fontdict={"fontsize": fontsize})
+    new_ax.tick_params(axis="both", labelsize=fontsize)
     new_ax.set_xlabel(new_ax.get_xlabel(), fontsize=fontsize)
     new_ax.set_ylabel(new_ax.get_ylabel(), fontsize=fontsize)
     return new_ax
@@ -330,7 +312,11 @@ def shape_metrics(
     elif isinstance(metrics, tuple):
         metrics = list(metrics)
 
-    if cluster_groups is not None and not isinstance(cluster_groups, list) and not isinstance(cluster_groups, np.ndarray):
+    if (
+        cluster_groups is not None
+        and not isinstance(cluster_groups, list)
+        and not isinstance(cluster_groups, np.ndarray)
+    ):
         cluster_groups = [cluster_groups]
 
     if condition_groups is None and condition_key is not None:
@@ -340,14 +326,18 @@ def shape_metrics(
             condition_groups = [condition_groups]
 
     if metrics is None:
-        metrics = [metric for metric in ["linearity", "curl", "elongation", "purity", "ncc"] if metric in adata.uns[f"shape_{component_key}"]]
+        metrics = [
+            metric
+            for metric in ["linearity", "curl", "elongation", "purity", "ncc"]
+            if metric in adata.uns[f"shape_{component_key}"]
+        ]
 
     keys = []
     if condition_key is not None:
         keys.append(condition_key)
     if cluster_key is not None:
         keys.append(cluster_key)
-    
+
     metrics_df = adata.obs[[component_key] + keys].drop_duplicates().dropna().set_index(component_key)
 
     for metric in metrics:
@@ -375,8 +365,8 @@ def shape_metrics(
             # Calculate average axes height in inches
             avg_height = figsize[1] / 2
             # Set absolute spacing of 1.5 inches between subplots
-            fig.subplots_adjust(hspace=1.5/avg_height)
-            
+            fig.subplots_adjust(hspace=1.5 / avg_height)
+
             plot_shapes(
                 metrics_melted,
                 "metric",
@@ -385,8 +375,8 @@ def shape_metrics(
                 cluster_groups,
                 fig=fig,
                 ax=axes[0],
-                title=f'Shape metrics by domain',
-                fontsize=fontsize
+                title=f"Shape metrics by domain",
+                fontsize=fontsize,
             )
 
             plot_shapes(
@@ -397,8 +387,8 @@ def shape_metrics(
                 condition_groups,
                 fig=fig,
                 ax=axes[1],
-                title=f'Shape metrics by condition',
-                fontsize=fontsize
+                title=f"Shape metrics by condition",
+                fontsize=fontsize,
             )
         else:
             fig, ax = plt.subplots(figsize=figsize)
@@ -411,13 +401,16 @@ def shape_metrics(
                     cluster_groups,
                     fig=fig,
                     ax=ax,
-                    title=f'Shape metrics by domain',
-                    fontsize=fontsize
+                    title=f"Shape metrics by domain",
+                    fontsize=fontsize,
                 )
 
             if condition_key is not None:
                 if metrics_melted[condition_key].nunique() < 2:
-                    warnings.warn(f"Only one condition {condition_groups[0]} for domain {cluster_groups}. Skipping condition plot.", stacklevel=2)
+                    warnings.warn(
+                        f"Only one condition {condition_groups[0]} for domain {cluster_groups}. Skipping condition plot.",
+                        stacklevel=2,
+                    )
                 else:
                     plot_shapes(
                         metrics_melted,
@@ -427,20 +420,20 @@ def shape_metrics(
                         condition_groups,
                         fig=fig,
                         ax=ax,
-                        title=f'Shape metrics by condition',
-                        fontsize=fontsize
+                        title=f"Shape metrics by condition",
+                        fontsize=fontsize,
                     )
     else:
         # Calculate number of rows needed based on number of metrics and ncols
         n_metrics = len(metrics)
         nrows = (n_metrics + ncols - 1) // ncols  # Ceiling division
-        
+
         # Create figure with appropriate size
         fig, axes = plt.subplots(nrows, ncols, figsize=(figsize[0] * ncols, figsize[1] * nrows))
         if nrows == 1 and ncols == 1:
             axes = np.array([axes])
         axes = axes.flatten()
-        
+
         # Plot each metric in its own subplot
         for i, metric in enumerate(metrics):
             ax = axes[i]
@@ -453,9 +446,9 @@ def shape_metrics(
                 fig=fig,
                 ax=ax,
                 title=f"Spatial domains: {metric}",
-                fontsize=fontsize
+                fontsize=fontsize,
             )
-        
+
         # Hide any unused subplots
         for j in range(i + 1, len(axes)):
             axes[j].set_visible(False)
