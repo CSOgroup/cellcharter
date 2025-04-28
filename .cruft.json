@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/scverse/cookiecutter-scverse",
-  "commit": "87a407a65408d75a949c0b54b19fd287475a56f8",
-  "checkout": "v0.4.0",
+  "commit": "497afeaf179fe5c1144c4503046efa494586cc3d",
+  "checkout": "test4",
   "context": {
     "cookiecutter": {
       "project_name": "cellcharter",
@@ -10,8 +10,9 @@
       "author_full_name": "Marco Varrone",
       "author_email": "marco.varrone@unil.ch",
       "github_user": "marcovarrone",
-      "project_repo": "https://github.com/marcovarrone/cellcharter",
+      "github_repo": "cellcharter",
       "license": "BSD 3-Clause License",
+      "ide_integration": true,
       "_copy_without_render": [
         ".github/workflows/build.yaml",
         ".github/workflows/test.yaml",
@@ -22,7 +23,8 @@
         "lstrip_blocks": true,
         "trim_blocks": true
       },
-      "_template": "https://github.com/scverse/cookiecutter-scverse"
+      "_template": "https://github.com/scverse/cookiecutter-scverse",
+      "_commit": "497afeaf179fe5c1144c4503046efa494586cc3d"
     }
   },
   "directory": null

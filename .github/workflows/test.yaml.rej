@@ -1,0 +1,41 @@
+diff a/.github/workflows/test.yaml b/.github/workflows/test.yaml	(rejected hunks)
+@@ -39,29 +40,19 @@ jobs:
+       PYTHON: ${{ matrix.python }}
+ 
+     steps:
+-      - uses: actions/checkout@v3
+-      - name: Set up Python ${{ matrix.python }}
+-        uses: actions/setup-python@v4
++      - uses: actions/checkout@v4
+         with:
+-          python-version: ${{ matrix.python }}
+-          cache: "pip"
+-          cache-dependency-path: "**/pyproject.toml"
+-
+-      - name: Install test dependencies
+-        run: |
+-          python -m pip install --upgrade pip wheel
+-      - name: Install dependencies
+-        run: |
+-          pip install ${{ matrix.pip-flags }} ".[dev,test]"
+-      - name: Test
++          filter: blob:none
++          fetch-depth: 0
++      - name: Install uv
++        uses: astral-sh/setup-uv@v5
++        with:
++          cache-dependency-glob: pyproject.toml
++      - name: run tests using hatch
+         env:
+           MPLBACKEND: agg
+           PLATFORM: ${{ matrix.os }}
+           DISPLAY: :42
+-        run: |
+-          coverage run -m pytest -v --color=yes
+-      - name: Report coverage
+-        run: |
+-          coverage report
++        run: uvx hatch test --cover --python ${{ matrix.python }}
+       - name: Upload coverage
+-        uses: codecov/codecov-action@v3
++        uses: codecov/codecov-action@v4
