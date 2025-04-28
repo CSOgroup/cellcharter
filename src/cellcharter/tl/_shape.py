@@ -561,11 +561,11 @@ def normalized_component_contribution(
     neighborhood_key: str,
     cluster_key: str = "component",
     library_key: str = "sample",
-    out_key: str = "component_count",
+    out_key: str = "ncc",
     copy: bool = False,
 ) -> None | dict[int, float]:
     """
-    The Normalized Component Contribution (NCC) metric compares a component’s cell count to the average component size in its cellular neighborhood, indicating whether it is larger or smaller than expected given the neighborhood’s total cells and component count.
+    The Normalized Component Contribution (NCC) metric compares a component's cell count to the average component size in its cellular neighborhood, indicating whether it is larger or smaller than expected given the neighborhood's total cells and component count.
 
     Parameters
     ----------
@@ -594,7 +594,6 @@ def normalized_component_contribution(
         adata.obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
     )
     df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how="left")
-
     unique_counts = (
         adata.obs.groupby([library_key, neighborhood_key])[cluster_key]
         .nunique()

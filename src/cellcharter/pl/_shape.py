@@ -73,7 +73,6 @@ def boundaries(
     component_key: str = "component",
     alpha_boundary: float = 0.5,
     show_cells: bool = True,
-    cells_radius: float = None,
     save: str | Path | None = None,
 ) -> None:
     """
@@ -92,14 +91,13 @@ def boundaries(
         Transparency of the boundaries.
     show_cells
         Whether to show the cells or not.
+    cells_radius
+        Radius of the cells.
 
     Returns
     -------
     %(plotting_returns)s
     """
-    if show_cells is True and cells_radius is None:
-        raise ValueError("cells_radius must be provided when show_cells is True")
-
     adata = adata[adata.obs[library_key] == sample].copy()
     del adata.raw
     clusters = adata.obs[component_key].unique()
@@ -109,20 +107,20 @@ def boundaries(
         for cluster, boundary in adata.uns[f"shape_{component_key}"]["boundary"].items()
         if cluster in clusters
     }
-    gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()))
+    gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()), index=np.arange(len(boundaries)).astype(str))
     adata.obs.loc[adata.obs[component_key] == -1, component_key] = np.nan
     adata.obs.index = "cell_" + adata.obs.index
     adata.obs["instance_id"] = adata.obs.index
     adata.obs["region"] = "cells"
 
     xy = adata.obsm["spatial"]
-    cell_circles = sd.models.ShapesModel.parse(xy, geometry=0, radius=cells_radius, index=adata.obs["instance_id"])
-
+    if show_cells:
+        cell_circles = sd.models.ShapesModel.parse(xy, geometry=0, radius=1.0, index=adata.obs["instance_id"])
     obs = pd.DataFrame(list(boundaries.keys()), columns=[component_key], index=np.arange(len(boundaries)).astype(str))
     adata_obs = ad.AnnData(X=pd.DataFrame(index=obs.index, columns=adata.var_names), obs=obs)
     adata_obs.obs["region"] = "clusters"
     adata_obs.index = "cluster_" + adata_obs.obs.index
-    adata_obs.obs["instance_id"] = np.arange(len(boundaries))
+    adata_obs.obs["instance_id"] = np.arange(len(boundaries)).astype(str)
     adata_obs.obs[component_key] = pd.Categorical(adata_obs.obs[component_key])
 
     if sps.issparse(adata.X):
@@ -139,8 +137,10 @@ def boundaries(
 
     shapes = {
         "clusters": sd.models.ShapesModel.parse(gdf),
-        "cells": sd.models.ShapesModel.parse(cell_circles),
     }
+
+    if show_cells:
+        shapes["cells"] = sd.models.ShapesModel.parse(cell_circles)
 
     sdata = sd.SpatialData(shapes=shapes, tables=table)
 
@@ -172,7 +172,7 @@ def plot_shape_metrics(
     condition_key: str,
     condition_groups: list[str] | None = None,
     cluster_key: str | None = None,
-    cluster_id: list[str] | None = None,
+    cluster_groups: list[str] | None = None,
     component_key: str = "component",
     metrics: str | tuple[str] | list[str] = ("linearity", "curl"),
     figsize: tuple[float, float] = (8, 7),
@@ -217,7 +217,7 @@ def plot_shape_metrics(
         condition_key=condition_key,
         condition_groups=condition_groups,
         cluster_key=cluster_key,
-        cluster_id=cluster_id,
+        cluster_groups=cluster_groups,
         component_key=component_key,
         metrics=metrics,
         figsize=figsize,
@@ -225,19 +225,29 @@ def plot_shape_metrics(
     )
 
 
-def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -> None:
-    fig = plt.figure(figsize=figsize)
-    ax = sns.boxplot(
+def plot_shapes(
+        data, 
+        x, 
+        y, 
+        hue, 
+        hue_order, 
+        fig, 
+        ax, 
+        fontsize: str | int = 14,
+        title: str | None = None
+    ) -> None:
+    new_ax =sns.boxplot(
         data=data,
         x=x,
         hue=hue,
         y=y,
         showfliers=False,
         hue_order=hue_order,
+        ax=ax
     )
     adjust_box_widths(fig, 0.9)
 
-    ax = sns.stripplot(
+    new_ax = sns.stripplot(
         data=data,
         x=x,
         hue=hue,
@@ -247,23 +257,30 @@ def plot_shapes(data, x, y, hue, hue_order, figsize, title: str | None = None) -
         jitter=0.13,
         dodge=True,
         hue_order=hue_order,
+        ax=new_ax
     )
 
     if len(data[hue].unique()) > 1:
-        handles, labels = ax.get_legend_handles_labels()
+        handles, labels = new_ax.get_legend_handles_labels()
         if len(handles) > 1:
-            plt.legend(
+            new_ax.legend(
                 handles[0 : len(data[hue].unique())],
                 labels[0 : len(data[hue].unique())],
                 bbox_to_anchor=(1.0, 1.03),
                 title=hue,
+                prop={'size': fontsize},
+                title_fontsize=fontsize
             )
     else:
-        if ax.get_legend() is not None:
-            ax.get_legend().remove()
-    plt.ylim(-0.05, 1.05)
-    plt.title(title)
-    plt.show()
+        if new_ax.get_legend() is not None:
+            new_ax.get_legend().remove()
+    
+    new_ax.set_ylim(-0.05, 1.05)
+    new_ax.set_title(title, fontdict={'fontsize': fontsize})
+    new_ax.tick_params(axis='both', labelsize=fontsize)
+    new_ax.set_xlabel(new_ax.get_xlabel(), fontsize=fontsize)
+    new_ax.set_ylabel(new_ax.get_ylabel(), fontsize=fontsize)
+    return new_ax
 
 
 @d.dedent
@@ -272,12 +289,12 @@ def shape_metrics(
     condition_key: str | None = None,
     condition_groups: list[str] | None = None,
     cluster_key: str | None = None,
-    cluster_id: str | list[str] | None = None,
+    cluster_groups: str | list[str] | None = None,
     component_key: str = "component",
     metrics: str | tuple[str] | list[str] | None = None,
-    fontsize: str | int = "small",
-    figsize: tuple[float, float] = (8, 7),
-    title: str | None = None,
+    fontsize: str | int = 14,
+    figsize: tuple[float, float] = (10, 7),
+    ncols: int = 2,
 ) -> None:
     """
     Boxplots of the shape metrics between two conditions.
@@ -288,17 +305,19 @@ def shape_metrics(
     condition_key
         Key in :attr:`anndata.AnnData.obs` where the condition labels are stored.
     condition_groups
-        List of two conditions to compare. If None, all pairwise comparisons are made.
+        List of conditions to show. If None, all conditions are plotted.
     cluster_key
         Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored. This is used to filter the clusters to plot.
-    cluster_id
-        List of clusters to plot. If None, all clusters are plotted.
+    cluster_groups
+        List of cluster to plot. If None, all clusters are plotted.
     component_key
         Key in :attr:`anndata.AnnData.obs` where the component labels are stored.
     metrics
         List of metrics to plot. Available metrics are ``linearity``, ``curl``, ``elongation``, ``purity``, ``ncc``. If `None`, all computed metrics are plotted.
     figsize
         Figure size.
+    ncols
+        Number of columns in the subplot grid when plotting multiple metrics.
     title
         Title of the plot.
 
@@ -311,8 +330,8 @@ def shape_metrics(
     elif isinstance(metrics, tuple):
         metrics = list(metrics)
 
-    if cluster_id is not None and not isinstance(cluster_id, list) and not isinstance(cluster_id, np.ndarray):
-        cluster_id = [cluster_id]
+    if cluster_groups is not None and not isinstance(cluster_groups, list) and not isinstance(cluster_groups, np.ndarray):
+        cluster_groups = [cluster_groups]
 
     if condition_groups is None and condition_key is not None:
         condition_groups = adata.obs[condition_key].cat.categories
@@ -321,21 +340,21 @@ def shape_metrics(
             condition_groups = [condition_groups]
 
     if metrics is None:
-        metrics = [metric for metric in adata.uns[f"shape_{component_key}"].keys() if metric != "boundary"]
+        metrics = [metric for metric in ["linearity", "curl", "elongation", "purity", "ncc"] if metric in adata.uns[f"shape_{component_key}"]]
 
     keys = []
     if condition_key is not None:
         keys.append(condition_key)
     if cluster_key is not None:
         keys.append(cluster_key)
-
+    
     metrics_df = adata.obs[[component_key] + keys].drop_duplicates().dropna().set_index(component_key)
 
     for metric in metrics:
         metrics_df[metric] = metrics_df.index.map(adata.uns[f"shape_{component_key}"][metric])
 
-    if cluster_id is not None:
-        metrics_df = metrics_df[metrics_df[cluster_key].isin(cluster_id)]
+    if cluster_groups is not None:
+        metrics_df = metrics_df[metrics_df[cluster_key].isin(cluster_groups)]
 
         metrics_melted = pd.melt(
             metrics_df,
@@ -346,53 +365,97 @@ def shape_metrics(
 
         metrics_melted[cluster_key] = metrics_melted[cluster_key].cat.remove_unused_categories()
 
-        if cluster_key is not None:
+        if cluster_key is not None and condition_key is not None and metrics_melted[condition_key].nunique() >= 2:
+            nrows = (2 + ncols - 1) // ncols  # Ceiling division
+            # Create figure with appropriate size
+            fig, axes = plt.subplots(nrows, ncols, figsize=(figsize[0] * ncols, figsize[1] * nrows))
+            if nrows == 1 and ncols == 1:
+                axes = np.array([axes])
+            axes = axes.flatten()
+            # Calculate average axes height in inches
+            avg_height = figsize[1] / 2
+            # Set absolute spacing of 1.5 inches between subplots
+            fig.subplots_adjust(hspace=1.5/avg_height)
+            
             plot_shapes(
                 metrics_melted,
                 "metric",
                 "value",
                 cluster_key,
-                cluster_id,
-                figsize,
-                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by domain',
-            )
-            plot_shapes(
-                metrics_melted,
-                "metric",
-                "value",
-                cluster_key,
-                cluster_id,
-                figsize,
-                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}',
+                cluster_groups,
+                fig=fig,
+                ax=axes[0],
+                title=f'Shape metrics by domain',
+                fontsize=fontsize
             )
 
-        if condition_key is not None:
             plot_shapes(
                 metrics_melted,
                 "metric",
                 "value",
                 condition_key,
                 condition_groups,
-                figsize,
-                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])} by condition',
+                fig=fig,
+                ax=axes[1],
+                title=f'Shape metrics by condition',
+                fontsize=fontsize
             )
-            plot_shapes(
-                metrics_melted,
-                "metric",
-                "value",
-                condition_key,
-                condition_groups,
-                figsize,
-                f'Spatial domains: {", ".join([str(cluster) for cluster in cluster_id])}',
-            )
+        else:
+            fig, ax = plt.subplots(figsize=figsize)
+            if cluster_key is not None:
+                plot_shapes(
+                    metrics_melted,
+                    "metric",
+                    "value",
+                    cluster_key,
+                    cluster_groups,
+                    fig=fig,
+                    ax=ax,
+                    title=f'Shape metrics by domain',
+                    fontsize=fontsize
+                )
+
+            if condition_key is not None:
+                if metrics_melted[condition_key].nunique() < 2:
+                    warnings.warn(f"Only one condition {condition_groups[0]} for domain {cluster_groups}. Skipping condition plot.", stacklevel=2)
+                else:
+                    plot_shapes(
+                        metrics_melted,
+                        "metric",
+                        "value",
+                        condition_key,
+                        condition_groups,
+                        fig=fig,
+                        ax=ax,
+                        title=f'Shape metrics by condition',
+                        fontsize=fontsize
+                    )
     else:
-        for metric in metrics:
+        # Calculate number of rows needed based on number of metrics and ncols
+        n_metrics = len(metrics)
+        nrows = (n_metrics + ncols - 1) // ncols  # Ceiling division
+        
+        # Create figure with appropriate size
+        fig, axes = plt.subplots(nrows, ncols, figsize=(figsize[0] * ncols, figsize[1] * nrows))
+        if nrows == 1 and ncols == 1:
+            axes = np.array([axes])
+        axes = axes.flatten()
+        
+        # Plot each metric in its own subplot
+        for i, metric in enumerate(metrics):
+            ax = axes[i]
             plot_shapes(
                 metrics_df,
                 cluster_key if cluster_key is not None else condition_key,
                 metric,
                 condition_key if condition_key is not None else cluster_key,
                 condition_groups if condition_groups is not None else None,
-                figsize,
-                f"Spatial domains: {metric}",
+                fig=fig,
+                ax=ax,
+                title=f"Spatial domains: {metric}",
+                fontsize=fontsize
             )
+        
+        # Hide any unused subplots
+        for j in range(i + 1, len(axes)):
+            axes[j].set_visible(False)
