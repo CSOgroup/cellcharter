@@ -591,7 +591,7 @@ def normalized_component_contribution(
     df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
     df = pd.merge(df, adata.obs[[cluster_key, neighborhood_key]].drop_duplicates().dropna(), on=cluster_key)
     nbh_counts = (
-        adata.obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
+        adata[~adata.obs[cluster_key].isna()].obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
     )
     df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how="left")
     unique_counts = (
@@ -601,7 +601,7 @@ def normalized_component_contribution(
         .rename(columns={cluster_key: "unique_components_neighborhood_image"})
     )
     df = df.merge(unique_counts, on=[library_key, neighborhood_key], how="left")
-    df["ncc"] = df["count"] / df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"]
+    df["ncc"] = df["count"] / (df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"])
 
     if copy:
         return df.set_index(cluster_key)["ncc"].to_dict()
