@@ -591,7 +591,7 @@ def normalized_component_contribution(
     df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
     df = pd.merge(df, adata.obs[[cluster_key, neighborhood_key]].drop_duplicates().dropna(), on=cluster_key)
     nbh_counts = (
-        adata[~adata.obs[cluster_key].isna()].obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
+        adata.obs.groupby([library_key, neighborhood_key]).size().reset_index(name="total_neighborhood_cells_image")
     )
     df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how="left")
     unique_counts = (
