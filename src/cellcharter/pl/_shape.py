@@ -295,7 +295,7 @@ def shape_metrics(
     component_key
         Key in :attr:`anndata.AnnData.obs` where the component labels are stored.
     metrics
-        List of metrics to plot. Available metrics are ``linearity``, ``curl``, ``elongation``, ``purity``, ``ncc``. If `None`, all computed metrics are plotted.
+        List of metrics to plot. Available metrics are ``linearity``, ``curl``, ``elongation``, ``purity``, ``rcs``. If `None`, all computed metrics are plotted.
     figsize
         Figure size.
     ncols
@@ -328,7 +328,7 @@ def shape_metrics(
     if metrics is None:
         metrics = [
             metric
-            for metric in ["linearity", "curl", "elongation", "purity", "ncc"]
+            for metric in ["linearity", "curl", "elongation", "purity", "rcs"]
             if metric in adata.uns[f"shape_{component_key}"]
         ]
 
