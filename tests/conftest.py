@@ -34,6 +34,7 @@ def codex_adata() -> ad.AnnData:
             adata = sc.read(
                 "tests/_data/codex_adata.h5ad", backup_url="https://figshare.com/ndownloader/files/46832722"
             )
+            adata.obs_names_make_unique()
             return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
         except HTTPError as e:
             if attempt == max_retries - 1:  # Last attempt

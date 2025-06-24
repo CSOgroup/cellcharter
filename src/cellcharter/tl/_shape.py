@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import networkx as nx
 import numpy as np
+import pandas as pd
 import shapely
 import sknw
 from anndata import AnnData
@@ -234,8 +236,31 @@ def _rasterize(boundary, height=1000):
     return features.rasterize([poly], out_shape=(height, int(height * (maxx - minx) / (maxy - miny)))), scale_factor
 
 
-@d.dedent
 def linearity(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "linearity",
+    height: int = 1000,
+    min_ratio: float = 0.05,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "linearity is deprecated and will be removed in the next release. " "Please use `linearity_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return linearity_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        height=height,
+        min_ratio=min_ratio,
+        copy=copy,
+    )
+
+
+@d.dedent
+def linearity_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "linearity",
@@ -294,8 +319,27 @@ def _elongation(boundary):
     return 1 - minor_axis / major_axis
 
 
-@d.dedent
 def elongation(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "elongation",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "elongation is deprecated and will be removed in the next release. " "Please use `elongation_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return elongation_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        copy=copy,
+    )
+
+
+@d.dedent
+def elongation_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "elongation",
@@ -353,8 +397,27 @@ def _curl(boundary):
         return 1 - length / fibre_length
 
 
-@d.dedent
 def curl(
+    adata: AnnData,
+    cluster_key: str = "component",
+    out_key: str = "curl",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "curl is deprecated and will be removed in the next release. " "Please use `curl_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return curl_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        out_key=out_key,
+        copy=copy,
+    )
+
+
+@d.dedent
+def curl_metric(
     adata: AnnData,
     cluster_key: str = "component",
     out_key: str = "curl",
@@ -389,8 +452,31 @@ def curl(
     adata.uns[f"shape_{cluster_key}"][out_key] = curl_score
 
 
-@d.dedent
 def purity(
+    adata: AnnData,
+    cluster_key: str = "component",
+    library_key: str = "sample",
+    out_key: str = "purity",
+    exterior: bool = False,
+    copy: bool = False,
+) -> None | dict[int, float]:
+    warnings.warn(
+        "purity is deprecated and will be removed in the next release. " "Please use `purity_metric` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return purity_metric(
+        adata=adata,
+        cluster_key=cluster_key,
+        library_key=library_key,
+        out_key=out_key,
+        exterior=exterior,
+        copy=copy,
+    )
+
+
+@d.dedent
+def purity_metric(
     adata: AnnData,
     cluster_key: str = "component",
     library_key: str = "sample",
@@ -448,3 +534,63 @@ def purity(
     if copy:
         return purity_score
     adata.uns[f"shape_{cluster_key}"][out_key] = purity_score
+
+
+@d.dedent
+def relative_component_size_metric(
+    adata: AnnData,
+    neighborhood_key: str,
+    cluster_key: str = "component",
+    library_key: str | None = None,
+    out_key: str = "rcs",
+    copy: bool = False,
+) -> None | dict[int, float]:
+    """
+    The Relative Component Size (RCS) metric compares a component's cell count to the average component size in its cellular neighborhood, indicating whether it is larger or smaller than expected given the neighborhood's total cells and component count.
+
+    Parameters
+    ----------
+    %(adata)s
+    neighborhood_key
+        Key in :attr:`anndata.AnnData.obs` where the neighborhood labels are stored.
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels from cc.gr.connected_components are stored.
+    library_key
+        Key in :attr:`anndata.AnnData.obs` where the sample or condition labels are stored. If None, the average is computed across all samples.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    %(copy)s
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the RCS as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - - the above mentioned :class:`dict`.
+    """
+    count = adata.obs[cluster_key].value_counts().to_dict()
+    df = pd.DataFrame(count.items(), columns=[cluster_key, "count"])
+    df = pd.merge(df, adata.obs[[cluster_key, neighborhood_key]].drop_duplicates().dropna(), on=cluster_key)
+
+    if library_key is not None:
+        df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
+        group_by = [library_key, neighborhood_key]
+    else:
+        group_by = [neighborhood_key]
+    
+    nbh_counts = (
+        adata.obs.groupby(group_by, observed=False).size().reset_index(name="total_neighborhood_cells_image")
+    )
+    df = df.merge(nbh_counts, on=group_by, how="left")
+    unique_counts = (
+        adata.obs.groupby(group_by, observed=False)[cluster_key]
+        .nunique()
+        .reset_index()
+        .rename(columns={cluster_key: "unique_components_neighborhood_image"})
+    )
+    df = df.merge(unique_counts, on=group_by, how="left")
+    
+    df["rcs"] = df["count"] / (df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"])
+
+    if copy:
+        return df.set_index(cluster_key)["rcs"].to_dict()
+    adata.uns[f"shape_{cluster_key}"][out_key] = df.set_index(cluster_key)["rcs"].to_dict()
