@@ -8,19 +8,20 @@ default_stages:
 minimum_pre_commit_version: 2.16.0
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.1.0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
+        exclude: '.*\.py$ |.*\.toml$'
   - repo: https://github.com/asottile/blacken-docs
     rev: 1.19.1
     hooks:
       - id: blacken-docs
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
   - repo: https://github.com/asottile/yesqa
@@ -54,7 +55,7 @@ repos:
           - --remove-unused-variable
           - --ignore-init-module-imports
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.2.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -65,7 +66,7 @@ repos:
           - flake8-bugbear
           - flake8-blind-except
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args: [--py3-plus, --py38-plus, --keep-runtime-typing]

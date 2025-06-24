@@ -14,6 +14,7 @@
 
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
+[![PyPI Downloads](https://static.pepy.tech/badge/cellcharter)](https://pepy.tech/projects/cellcharter)
 
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/CSOgroup/cellcharter/test.yaml?branch=main
 [link-tests]: https://github.com/CSOgroup/cellcharter/actions/workflows/test.yml
@@ -61,7 +62,7 @@ Please refer to the [documentation][link-docs]. In particular, the
 ## Installation
 
 1. Create a conda or pyenv environment
-2. Install Python >= 3.8 and [PyTorch](https://pytorch.org) >= 1.12.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first from [here](https://pytorch.org/get-started/locally/).
+2. Install Python >= 3.10,<3.13 and [PyTorch](https://pytorch.org) >= 1.12.0. If you are planning to use a GPU, make sure to download and install the correct version of PyTorch first from [here](https://pytorch.org/get-started/locally/).
 3. Install the library used for dimensionality reduction and batch effect removal according to the data type you are planning to analyze:
     - [scVI](https://github.com/scverse/scvi-tools) for spatial transcriptomics and/or epigenomics data such as 10x Visium and Xenium, Nanostring CosMx, Vizgen MERSCOPE, Stereo-seq, DBiT-seq, MERFISH and seqFISH data.
     - A modified version of [scArches](https://github.com/theislab/scarches)'s TRVAE model for spatial proteomics data such as Akoya CODEX, Lunaphore COMET, CyCIF, IMC and MIBI-TOF data.
@@ -71,17 +72,13 @@ Please refer to the [documentation][link-docs]. In particular, the
 pip install cellcharter
 ```
 
-We suggest using `mamba` to install the dependencies.
-Installing the latest version of the dependencies (in particular `scvi-tools` and `spatialdata`) may lead to dependency conflicts.
-However, this should not be a problem because CellCharter doesn't use any of the mismatching features.
-
 We report here an example of an installation aimed at analyzing spatial transcriptomics data (and thus installing `scvi-tools`).
 This example is based on a Linux CentOS 7 system with an NVIDIA A100 GPU.
+It will install Pytorch for GPU by default.
 
 ```bash
-conda create -n cellcharter-env -c conda-forge python mamba
+conda create -n cellcharter-env -c conda-forge python=3.12
 conda activate cellcharter-env
-mamba install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
 pip install scvi-tools
 pip install cellcharter
 ```
