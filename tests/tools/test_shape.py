@@ -118,9 +118,6 @@ class TestRelativeComponentSize:
         codex_adata.obs["component"] = pd.Categorical(components)
         codex_adata.obs["sample"] = "test"
         
-        # Make observation names unique to avoid warnings
-        codex_adata.obs_names_make_unique()
-        
         # Verify the distribution
         domain_counts = codex_adata.obs["domain"].value_counts().sort_index()
         component_counts = codex_adata.obs["component"].value_counts().sort_index()
@@ -188,9 +185,6 @@ class TestRelativeComponentSize:
         codex_adata.obs["domain"] = pd.Categorical(domains)
         codex_adata.obs["component"] = pd.Categorical(components)
         codex_adata.obs["sample"] = "test"
-        
-        # Make observation names unique to avoid warnings
-        codex_adata.obs_names_make_unique()
         
         # Compute the relative component size metric
         rcs_values = cc.tl.relative_component_size_metric(
@@ -261,9 +255,6 @@ class TestRelativeComponentSize:
         codex_adata.obs["component"] = pd.Categorical(components)
         codex_adata.obs["sample"] = "test"
         
-        # Make observation names unique to avoid warnings
-        codex_adata.obs_names_make_unique()
-        
         # Compute the relative component size metric
         rcs_values = cc.tl.relative_component_size_metric(
             codex_adata, 
@@ -283,6 +274,86 @@ class TestRelativeComponentSize:
     def test_relative_component_size_cross_sample_domains(self, codex_adata: AnnData):
         """
         Test RCS metric when components from the same domain are distributed across different samples.
+        
+        Setup:
+        - Domain 0: 50% of cells, split across two samples
+          * Sample "BALBc-1": 30% of total cells, one component (component 0)
+          * Sample "MRL-5": 20% of total cells, one component (component 1)
+        - Domain 1: 50% of cells, split across two samples
+          * Sample "BALBc-1": 25% of total cells, split 60/40 into components 2 and 3
+          * Sample "MRL-5": 25% of total cells, split 40/60 into components 4 and 5
+        
+        Expected RCS values (calculated across all samples for each domain):
+        - Component 0: 1.2 (60% of domain 0, 2 components, expected average 50%)
+        - Component 1: 0.8 (40% of domain 0, 2 components, expected average 50%)
+        - Component 2: 1.2 (15% of domain 1, 4 components, expected average 12.5%)
+        - Component 3: 0.8 (10% of domain 1, 4 components, expected average 12.5%)
+        - Component 4: 0.8 (10% of domain 1, 4 components, expected average 12.5%)
+        - Component 5: 1.2 (15% of domain 1, 4 components, expected average 12.5%)
+        """
+        # Get total number of cells
+        total_cells = len(codex_adata)
+        
+        # Calculate counts based on the specified distribution
+        # Domain 0: 50% total (30% BALBc-1, 20% MRL-5)
+        # Domain 1: 50% total (25% BALBc-1, 25% MRL-5)
+        balbc_domain0_count = int(total_cells * 0.30)
+        mrl_domain0_count = int(total_cells * 0.20)
+        balbc_domain1_count = int(total_cells * 0.25)
+        mrl_domain1_count = total_cells - balbc_domain0_count - mrl_domain0_count - balbc_domain1_count
+        
+        # Domain 1 in BALBc-1: 60% component 2, 40% component 3
+        balbc_comp2_count = int(balbc_domain1_count * 0.60)
+        balbc_comp3_count = balbc_domain1_count - balbc_comp2_count
+        
+        # Domain 1 in MRL-5: 40% component 4, 60% component 5
+        mrl_comp4_count = int(mrl_domain1_count * 0.40)
+        mrl_comp5_count = mrl_domain1_count - mrl_comp4_count
+        
+        # Create sample assignments
+        samples = np.full(total_cells, "BALBc-1", dtype=object)
+        samples[balbc_domain0_count:balbc_domain0_count + mrl_domain0_count] = "MRL-5"
+        samples[balbc_domain0_count + mrl_domain0_count:balbc_domain0_count + mrl_domain0_count + balbc_domain1_count] = "BALBc-1"
+        samples[balbc_domain0_count + mrl_domain0_count + balbc_domain1_count:] = "MRL-5"
+        
+        # Create domain (neighborhood) assignments
+        domains = np.zeros(total_cells, dtype=int)
+        domains[balbc_domain0_count + mrl_domain0_count:] = 1  # First 50% get domain 0, rest get domain 1
+        
+        # Create component assignments
+        components = np.full(total_cells, -1, dtype=int)
+        components[:balbc_domain0_count] = 0  # BALBc-1 domain 0 gets component 0
+        components[balbc_domain0_count:balbc_domain0_count + mrl_domain0_count] = 1  # MRL-5 domain 0 gets component 1
+        components[balbc_domain0_count + mrl_domain0_count:balbc_domain0_count + mrl_domain0_count + balbc_comp2_count] = 2  # BALBc-1 domain 1 first part gets component 2
+        components[balbc_domain0_count + mrl_domain0_count + balbc_comp2_count:balbc_domain0_count + mrl_domain0_count + balbc_domain1_count] = 3  # BALBc-1 domain 1 second part gets component 3
+        components[balbc_domain0_count + mrl_domain0_count + balbc_domain1_count:balbc_domain0_count + mrl_domain0_count + balbc_domain1_count + mrl_comp4_count] = 4  # MRL-5 domain 1 first part gets component 4
+        components[balbc_domain0_count + mrl_domain0_count + balbc_domain1_count + mrl_comp4_count:] = 5  # MRL-5 domain 1 second part gets component 5
+        
+        # Add the assignments to the adata
+        codex_adata.obs["domain"] = pd.Categorical(domains)
+        codex_adata.obs["component"] = pd.Categorical(components)
+        codex_adata.obs["sample"] = pd.Categorical(samples)    
+
+        # Compute the relative component size metric
+        rcs_values = cc.tl.relative_component_size_metric(
+            codex_adata, 
+            neighborhood_key="domain", 
+            cluster_key="component",
+            copy=True
+        )
+        
+        # Check expected RCS values
+        # Each component should be calculated relative to its own sample and domain
+        assert abs(rcs_values[0] - 1.2) < 1e-2  # Component 0: 60% of domain 0 (2 components, expected 50%)
+        assert abs(rcs_values[1] - 0.8) < 1e-2  # Component 1: 40% of domain 0 (2 components, expected 50%)
+        assert abs(rcs_values[2] - 1.2) < 1e-2  # Component 2: 60% of BALBc-1 domain 1 = 15% of total, domain 1 avg = 12.5%
+        assert abs(rcs_values[3] - 0.8) < 1e-2  # Component 3: 40% of BALBc-1 domain 1 = 10% of total, domain 1 avg = 12.5%
+        assert abs(rcs_values[4] - 0.8) < 1e-2  # Component 4: 40% of MRL-5 domain 1 = 10% of total, domain 1 avg = 12.5%
+        assert abs(rcs_values[5] - 1.2) < 1e-2  # Component 5: 60% of MRL-5 domain 1 = 15% of total, domain 1 avg = 12.5%
+
+    def test_relative_component_size_within_sample_domains(self, codex_adata: AnnData):
+        """
+        Test RCS metric when components from the same domain are distributed within a sample.
         
         Setup:
         - Domain 0: 50% of cells, split across two samples
@@ -363,4 +434,3 @@ class TestRelativeComponentSize:
         assert abs(rcs_values[3] - 0.8) < 1e-2  # Component 3: 40% of domain 1 in BALBc-1 (2 components)
         assert abs(rcs_values[4] - 0.8) < 1e-2  # Component 4: 40% of domain 1 in MRL-5 (2 components)
         assert abs(rcs_values[5] - 1.2) < 1e-2  # Component 5: 60% of domain 1 in MRL-5 (2 components)
-

@@ -541,7 +541,7 @@ def relative_component_size_metric(
     adata: AnnData,
     neighborhood_key: str,
     cluster_key: str = "component",
-    library_key: str = "sample",
+    library_key: str | None = None,
     out_key: str = "rcs",
     copy: bool = False,
 ) -> None | dict[int, float]:
@@ -556,7 +556,7 @@ def relative_component_size_metric(
     cluster_key
         Key in :attr:`anndata.AnnData.obs` where the cluster labels from cc.gr.connected_components are stored.
     library_key
-        Key in :attr:`anndata.AnnData.obs` where the sample labels are stored.
+        Key in :attr:`anndata.AnnData.obs` where the sample or condition labels are stored. If None, the average is computed across all samples.
     out_key
         Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
     %(copy)s
@@ -569,19 +569,26 @@ def relative_component_size_metric(
     """
     count = adata.obs[cluster_key].value_counts().to_dict()
     df = pd.DataFrame(count.items(), columns=[cluster_key, "count"])
-    df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
     df = pd.merge(df, adata.obs[[cluster_key, neighborhood_key]].drop_duplicates().dropna(), on=cluster_key)
+
+    if library_key is not None:
+        df = pd.merge(df, adata.obs[[cluster_key, library_key]].drop_duplicates().dropna(), on=cluster_key)
+        group_by = [library_key, neighborhood_key]
+    else:
+        group_by = [neighborhood_key]
+    
     nbh_counts = (
-        adata.obs.groupby([library_key, neighborhood_key], observed=False).size().reset_index(name="total_neighborhood_cells_image")
+        adata.obs.groupby(group_by, observed=False).size().reset_index(name="total_neighborhood_cells_image")
     )
-    df = df.merge(nbh_counts, on=[library_key, neighborhood_key], how="left")
+    df = df.merge(nbh_counts, on=group_by, how="left")
     unique_counts = (
-        adata.obs.groupby([library_key, neighborhood_key], observed=False)[cluster_key]
+        adata.obs.groupby(group_by, observed=False)[cluster_key]
         .nunique()
         .reset_index()
         .rename(columns={cluster_key: "unique_components_neighborhood_image"})
     )
-    df = df.merge(unique_counts, on=[library_key, neighborhood_key], how="left")
+    df = df.merge(unique_counts, on=group_by, how="left")
+    
     df["rcs"] = df["count"] / (df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"])
 
     if copy:
