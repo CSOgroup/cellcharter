@@ -8,7 +8,6 @@ import geopandas
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.sparse as sps
 import seaborn as sns
 import spatialdata as sd
 import spatialdata_plot  # noqa: F401
@@ -73,7 +72,9 @@ def boundaries(
     component_key: str = "component",
     alpha_boundary: float = 0.5,
     show_cells: bool = True,
+    cell_radius: float = 1.0,
     save: str | Path | None = None,
+    **kwargs,
 ) -> None:
     """
     Plot the boundaries of the clusters.
@@ -91,8 +92,12 @@ def boundaries(
         Transparency of the boundaries.
     show_cells
         Whether to show the cells or not.
-    cells_radius
-        Radius of the cells.
+    cell_radius
+        Radius of the cells, if present.
+    save
+        Path to save the plot.
+    kwargs
+        Additional arguments to pass to the `spatialdata.pl.render_shapes()` function.
 
     Returns
     -------
@@ -108,46 +113,50 @@ def boundaries(
         if cluster in clusters
     }
     gdf = geopandas.GeoDataFrame(geometry=list(boundaries.values()), index=np.arange(len(boundaries)).astype(str))
-    adata.obs.loc[adata.obs[component_key] == -1, component_key] = np.nan
-    adata.obs.index = "cell_" + adata.obs.index
-    adata.obs["instance_id"] = adata.obs.index
-    adata.obs["region"] = "cells"
 
-    xy = adata.obsm["spatial"]
-    if show_cells:
-        cell_circles = sd.models.ShapesModel.parse(xy, geometry=0, radius=1.0, index=adata.obs["instance_id"])
-    obs = pd.DataFrame(list(boundaries.keys()), columns=[component_key], index=np.arange(len(boundaries)).astype(str))
-    adata_obs = ad.AnnData(X=pd.DataFrame(index=obs.index, columns=adata.var_names), obs=obs)
-    adata_obs.obs["region"] = "clusters"
-    adata_obs.index = "cluster_" + adata_obs.obs.index
-    adata_obs.obs["instance_id"] = np.arange(len(boundaries)).astype(str)
-    adata_obs.obs[component_key] = pd.Categorical(adata_obs.obs[component_key])
-
-    if sps.issparse(adata.X):
-        # If the adata is sparse, we need to convert the adata_obs to an empty sparse matrix
-        adata_obs.X = sps.csr_matrix((len(adata_obs.obs), len(adata.var_names)))
-
-    adata = ad.concat((adata, adata_obs), join="outer")
-
-    adata.obs["region"] = adata.obs["region"].astype("category")
-
-    table = sd.models.TableModel.parse(
-        adata, region_key="region", region=["clusters", "cells"], instance_key="instance_id"
+    adata_components = ad.AnnData(
+        obs=pd.DataFrame(list(boundaries.keys()), columns=[component_key], index=np.arange(len(boundaries)).astype(str))
     )
+    adata_components.obs["region"] = "component_boundaries"
+    adata_components.obs["region"] = pd.Categorical(adata_components.obs["region"])
+    adata_components.index = "cluster_" + adata_components.obs.index
+    adata_components.obs["instance_id"] = np.arange(len(boundaries)).astype(str)
+    adata_components.obs[component_key] = pd.Categorical(adata_components.obs[component_key])
+    adata_components.obs[component_key] = adata_components.obs[component_key].cat.remove_unused_categories()
 
-    shapes = {
-        "clusters": sd.models.ShapesModel.parse(gdf),
+    shapes = {"component_boundaries": sd.models.ShapesModel.parse(gdf)}
+
+    tables = {
+        "components": sd.models.TableModel.parse(
+            adata_components, region_key="region", region="component_boundaries", instance_key="instance_id"
+        )
     }
 
     if show_cells:
-        shapes["cells"] = sd.models.ShapesModel.parse(cell_circles)
+        adata_cells = ad.AnnData(obs=adata.obs[[component_key]], obsm={"spatial": adata.obsm["spatial"]})
+        adata_cells.obs.loc[adata_cells.obs[component_key] == -1, component_key] = np.nan
+        adata_cells.obs.index = "cell_" + adata_cells.obs.index
+        adata_cells.obs["instance_id"] = adata_cells.obs.index
+        adata_cells.obs["region"] = "cell_circles"
+        adata_cells.obs["region"] = pd.Categorical(adata_cells.obs["region"])
+        adata_cells
 
-    sdata = sd.SpatialData(shapes=shapes, tables=table)
+        tables["cells"] = sd.models.TableModel.parse(
+            adata_cells, region_key="region", region="cell_circles", instance_key="instance_id"
+        )
+        shapes["cell_circles"] = sd.models.ShapesModel.parse(
+            adata_cells.obsm["spatial"], geometry=0, radius=1.0, index=adata_cells.obs["instance_id"]
+        )
 
-    ax = plt.gca()
+    sdata = sd.SpatialData(shapes=shapes, tables=tables)
+
+    _, ax = plt.subplots(**kwargs)
+
     if show_cells:
         try:
-            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+            sdata.pl.render_shapes("cell_circles", color=component_key, scale=cell_radius).pl.show(
+                ax=ax, legend_loc=None
+            )
         except TypeError:  # TODO: remove after spatialdata-plot issue  #256 is fixed
             warnings.warn(
                 "Until the next spatialdata_plot release, the cells that do not belong to any component will be displayed with a random color instead of grey.",
@@ -155,10 +164,12 @@ def boundaries(
             )
             sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
             sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
-            sdata.pl.render_shapes(elements="cells", color=component_key).pl.show(ax=ax, legend_loc=None)
+            sdata.pl.render_shapes("cell_circles", color=component_key, scale=cell_radius).pl.show(
+                ax=ax, legend_loc=None
+            )
 
     sdata.pl.render_shapes(
-        element="clusters",
+        element="component_boundaries",
         color=component_key,
         fill_alpha=alpha_boundary,
     ).pl.show(ax=ax)
@@ -226,6 +237,35 @@ def plot_shape_metrics(
 
 
 def plot_shapes(data, x, y, hue, hue_order, fig, ax, fontsize: str | int = 14, title: str | None = None) -> None:
+    """
+    Create a boxplot with stripplot overlay for shape metrics visualization.
+
+    Parameters
+    ----------
+    data
+        DataFrame containing the data to plot.
+    x
+        Column name for x-axis variable.
+    y
+        Column name for y-axis variable.
+    hue
+        Column name for grouping variable.
+    hue_order
+        Order of hue categories.
+    fig
+        Matplotlib figure object.
+    ax
+        Matplotlib axes object.
+    fontsize
+        Font size for plot elements.
+    title
+        Title for the plot.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The modified axes object.
+    """
     new_ax = sns.boxplot(data=data, x=x, hue=hue, y=y, showfliers=False, hue_order=hue_order, ax=ax)
     adjust_box_widths(fig, 0.9)
 
@@ -375,7 +415,7 @@ def shape_metrics(
                 cluster_groups,
                 fig=fig,
                 ax=axes[0],
-                title=f"Shape metrics by domain",
+                title="Shape metrics by domain",
                 fontsize=fontsize,
             )
 
@@ -387,7 +427,7 @@ def shape_metrics(
                 condition_groups,
                 fig=fig,
                 ax=axes[1],
-                title=f"Shape metrics by condition",
+                title="Shape metrics by condition",
                 fontsize=fontsize,
             )
         else:
@@ -401,7 +441,7 @@ def shape_metrics(
                     cluster_groups,
                     fig=fig,
                     ax=ax,
-                    title=f"Shape metrics by domain",
+                    title="Shape metrics by domain",
                     fontsize=fontsize,
                 )
 
@@ -420,7 +460,7 @@ def shape_metrics(
                         condition_groups,
                         fig=fig,
                         ax=ax,
-                        title=f"Shape metrics by condition",
+                        title="Shape metrics by condition",
                         fontsize=fontsize,
                     )
     else:
