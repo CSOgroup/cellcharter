@@ -4,10 +4,6 @@ on:
   release:
     types: [published]
 
-defaults:
-  run:
-    shell: bash -e {0} # -e to fail on error
-
 # Use "trusted publishing", see https://docs.pypi.org/trusted-publishers/
 jobs:
   release:
@@ -23,11 +19,11 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 0
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v4
         with:
-          cache-dependency-glob: pyproject.toml
-      - name: Build package
-        run: uv build
+          python-version: "3.x"
+          cache: "pip"
+      - run: pip install build
+      - run: python -m build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
