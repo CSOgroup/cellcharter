@@ -576,10 +576,8 @@ def relative_component_size_metric(
         group_by = [library_key, neighborhood_key]
     else:
         group_by = [neighborhood_key]
-    
-    nbh_counts = (
-        adata.obs.groupby(group_by, observed=False).size().reset_index(name="total_neighborhood_cells_image")
-    )
+
+    nbh_counts = adata.obs.groupby(group_by, observed=False).size().reset_index(name="total_neighborhood_cells_image")
     df = df.merge(nbh_counts, on=group_by, how="left")
     unique_counts = (
         adata.obs.groupby(group_by, observed=False)[cluster_key]
@@ -588,7 +586,7 @@ def relative_component_size_metric(
         .rename(columns={cluster_key: "unique_components_neighborhood_image"})
     )
     df = df.merge(unique_counts, on=group_by, how="left")
-    
+
     df["rcs"] = df["count"] / (df["total_neighborhood_cells_image"] / df["unique_components_neighborhood_image"])
 
     if copy:
