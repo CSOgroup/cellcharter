@@ -244,6 +244,31 @@ def linearity(
     min_ratio: float = 0.05,
     copy: bool = False,
 ) -> None | dict[int, float]:
+    """
+    Compute the linearity of the topological boundaries of sets of cells.
+
+    This function is deprecated. Please use `linearity_metric` instead.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    height
+        Height of the rasterized image.
+    min_ratio
+        Minimum ratio between the length of a branch and the total length of the skeleton.
+    %(copy)s
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the linearity as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
+    """
     warnings.warn(
         "linearity is deprecated and will be removed in the next release. " "Please use `linearity_metric` instead.",
         FutureWarning,
@@ -325,6 +350,27 @@ def elongation(
     out_key: str = "elongation",
     copy: bool = False,
 ) -> None | dict[int, float]:
+    """
+    Compute the elongation of the topological boundaries of sets of cells.
+
+    This function is deprecated. Please use `elongation_metric` instead.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    %(copy)s
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the elongation as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
+    """
     warnings.warn(
         "elongation is deprecated and will be removed in the next release. " "Please use `elongation_metric` instead.",
         FutureWarning,
@@ -403,6 +449,27 @@ def curl(
     out_key: str = "curl",
     copy: bool = False,
 ) -> None | dict[int, float]:
+    """
+    Compute the curl score of the topological boundaries of sets of cells.
+
+    This function is deprecated. Please use `curl_metric` instead.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    %(copy)s
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the curl score as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
+    """
     warnings.warn(
         "curl is deprecated and will be removed in the next release. " "Please use `curl_metric` instead.",
         FutureWarning,
@@ -460,6 +527,31 @@ def purity(
     exterior: bool = False,
     copy: bool = False,
 ) -> None | dict[int, float]:
+    """
+    Compute the purity of the topological boundaries of sets of cells.
+
+    This function is deprecated. Please use `purity_metric` instead.
+
+    Parameters
+    ----------
+    %(adata)s
+    cluster_key
+        Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
+    library_key
+        Key in :attr:`anndata.AnnData.obs` where the sample labels are stored.
+    out_key
+        Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
+    exterior
+        If ``True``, the computation of the purity ignores the polygon's internal holes.
+    %(copy)s
+
+    Returns
+    -------
+    If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the purity as values.
+
+    Otherwise, modifies the ``adata`` with the following key:
+        - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
+    """
     warnings.warn(
         "purity is deprecated and will be removed in the next release. " "Please use `purity_metric` instead.",
         FutureWarning,
