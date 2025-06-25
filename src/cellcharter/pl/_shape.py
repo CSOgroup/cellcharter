@@ -170,7 +170,6 @@ def boundaries(
                 groups = list(sdata.tables["cells"].obs[component_key].unique())
             # Remove any NaN values from groups
             groups = [g for g in groups if pd.notna(g)]
-            print(f"Groups for plotting: {groups}")
         except (KeyError, AttributeError) as e:
             warnings.warn(f"Could not determine groups for plotting: {e}", stacklevel=2)
             groups = None
