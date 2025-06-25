@@ -115,7 +115,7 @@ def boundaries(
     assert 0 <= min_hole_area_ratio <= 1, "min_hole_area_ratio must be between 0 and 1"
     assert alpha_start > 0, "alpha_start must be greater than 0"
 
-    clusters = [cluster for cluster in adata.obs[cluster_key].unique() if cluster != -1 and not np.isnan(cluster)]
+    clusters = [cluster for cluster in adata.obs[cluster_key].unique() if cluster != "-1" and not pd.isnull(cluster)]
 
     boundaries = {}
     with ProcessPoolExecutor() as executor:
