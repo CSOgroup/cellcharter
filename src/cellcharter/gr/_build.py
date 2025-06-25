@@ -154,9 +154,9 @@ def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 
 @d.dedent
 def connected_components(
     adata: AnnData,
-    cluster_key: str = None,
+    cluster_key: str | None = None,
     min_cells: int = 250,
-    connectivity_key: str = None,
+    connectivity_key: str | None = None,
     out_key: str = "component",
     copy: bool = False,
 ) -> None | np.ndarray:
@@ -205,9 +205,10 @@ def connected_components(
         )
         output.loc[:] = labels
 
-    output = output.astype("category")
-    output[output == -1] = np.nan
+    output = output.astype(str).astype("category")
+    output[output == "-1"] = np.nan
     output = output.cat.remove_unused_categories()
+    output = output.cat.reorder_categories(sorted(output.cat.categories, key=lambda x: int(x)))
 
     if copy:
         return output.values
