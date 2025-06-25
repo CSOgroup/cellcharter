@@ -207,7 +207,7 @@ class ClusterAutoK:
             if use_rep is not None
             else adata.obsm["X_cellcharter"] if "X_cellcharter" in adata.obsm else adata.X
         )
-        return pd.Categorical(self.best_models[k].predict(X), categories=np.arange(k))
+        return pd.Categorical(self.best_models[k].predict(X).astype(str), categories=np.arange(k).astype(str))
 
     @property
     def persistent_attributes(self) -> List[str]:
