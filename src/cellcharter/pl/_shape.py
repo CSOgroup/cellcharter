@@ -139,39 +139,86 @@ def boundaries(
         adata_cells.obs["instance_id"] = adata_cells.obs.index
         adata_cells.obs["region"] = "cell_circles"
         adata_cells.obs["region"] = pd.Categorical(adata_cells.obs["region"])
-        adata_cells
 
-        tables["cells"] = sd.models.TableModel.parse(
-            adata_cells, region_key="region", region="cell_circles", instance_key="instance_id"
-        )
-        shapes["cell_circles"] = sd.models.ShapesModel.parse(
-            adata_cells.obsm["spatial"], geometry=0, radius=1.0, index=adata_cells.obs["instance_id"]
-        )
+        # Ensure component_key is categorical
+        if not pd.api.types.is_categorical_dtype(adata_cells.obs[component_key]):
+            adata_cells.obs[component_key] = pd.Categorical(adata_cells.obs[component_key])
+
+        # Check if spatial data exists
+        if "spatial" not in adata_cells.obsm or adata_cells.obsm["spatial"].shape[0] == 0:
+            warnings.warn("No spatial data found for cells. Skipping cell visualization.", stacklevel=2)
+            show_cells = False
+        else:
+            tables["cells"] = sd.models.TableModel.parse(
+                adata_cells, region_key="region", region="cell_circles", instance_key="instance_id"
+            )
+            shapes["cell_circles"] = sd.models.ShapesModel.parse(
+                adata_cells.obsm["spatial"], geometry=0, radius=1.0, index=adata_cells.obs["instance_id"]
+            )
 
     sdata = sd.SpatialData(shapes=shapes, tables=tables)
 
     _, ax = plt.subplots(**kwargs)
 
+    palette = None
+    groups = None
     if show_cells:
         try:
-            sdata.pl.render_shapes("cell_circles", color=component_key, scale=cell_radius).pl.show(
-                ax=ax, legend_loc=None
-            )
+            if pd.api.types.is_categorical_dtype(sdata.tables["cells"].obs[component_key]):
+                groups = list(sdata.tables["cells"].obs[component_key].cat.categories)
+            else:
+                groups = list(sdata.tables["cells"].obs[component_key].unique())
+            # Remove any NaN values from groups
+            groups = [g for g in groups if pd.notna(g)]
+        except (KeyError, AttributeError) as e:
+            warnings.warn(f"Could not determine groups for plotting: {e}", stacklevel=2)
+            groups = None
+
+        from squidpy.pl._color_utils import _maybe_set_colors
+
+        _maybe_set_colors(
+            source=sdata.tables["cells"], target=sdata.tables["cells"], key=component_key, palette=palette
+        )
+        palette = sdata.tables["cells"].uns[f"{component_key}_colors"]
+
+        try:
+            sdata.pl.render_shapes(
+                "cell_circles",
+                color=component_key,
+                scale=cell_radius,
+                palette=palette,
+                groups=groups,
+                method="matplotlib",
+            ).pl.show(ax=ax, legend_loc=None)
         except TypeError:  # TODO: remove after spatialdata-plot issue  #256 is fixed
             warnings.warn(
                 "Until the next spatialdata_plot release, the cells that do not belong to any component will be displayed with a random color instead of grey.",
                 stacklevel=2,
             )
-            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].cat.add_categories([-1])
-            sdata.tables["table"].obs[component_key] = sdata.tables["table"].obs[component_key].fillna(-1)
-            sdata.pl.render_shapes("cell_circles", color=component_key, scale=cell_radius).pl.show(
-                ax=ax, legend_loc=None
-            )
+            # Create a copy of the table with modified component labels
+            modified_table = sdata.tables["cells"].copy()
+            modified_table.obs[component_key] = modified_table.obs[component_key].cat.add_categories([-1])
+            modified_table.obs[component_key] = modified_table.obs[component_key].fillna(-1)
+
+            # Update the spatialdata object with the modified table
+            sdata.tables["cells"] = modified_table
+
+            sdata.pl.render_shapes(
+                "cell_circles",
+                color=component_key,
+                scale=cell_radius,
+                palette=palette,
+                groups=groups,
+                method="matplotlib",
+            ).pl.show(ax=ax, legend_loc=None)
 
     sdata.pl.render_shapes(
         element="component_boundaries",
         color=component_key,
         fill_alpha=alpha_boundary,
+        palette=palette,
+        groups=groups if groups is not None else list(adata_components.obs[component_key].cat.categories),
+        method="matplotlib",
     ).pl.show(ax=ax)
 
     if save is not None:

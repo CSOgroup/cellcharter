@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import scipy.sparse as sps
 import squidpy as sq
 from anndata import AnnData
@@ -40,7 +41,7 @@ class TestRemoveIntraClusterLinks:
         non_visium_adata.obsp[Key.obsp.spatial_dist()] = sps.csr_matrix(
             [[0, 1, 4, 4], [1, 0, 6, 3], [4, 6, 0, 9], [4, 3, 9, 0]]
         )
-        non_visium_adata.obs["cluster"] = [0, 0, 1, 1]
+        non_visium_adata.obs["cluster"] = ["0", "0", "1", "1"]
 
         correct_conns = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [1, 1, 0, 0], [1, 1, 0, 0]])
         correct_dists = np.array([[0, 0, 4, 4], [0, 0, 6, 3], [4, 6, 0, 0], [4, 3, 0, 0]])
@@ -60,7 +61,7 @@ class TestRemoveIntraClusterLinks:
         non_visium_adata.obsp[Key.obsp.spatial_dist()] = sps.csr_matrix(
             [[0, 1, 4, 4], [1, 0, 6, 3], [4, 6, 0, 9], [4, 3, 9, 0]]
         )
-        non_visium_adata.obs["cluster"] = [0, 0, 0, 0]
+        non_visium_adata.obs["cluster"] = ["0", "0", "0", "0"]
 
         correct_conns = np.zeros((non_visium_adata.shape[0], non_visium_adata.shape[0]))
         correct_dists = np.zeros((non_visium_adata.shape[0], non_visium_adata.shape[0]))
@@ -80,7 +81,7 @@ class TestRemoveIntraClusterLinks:
         non_visium_adata.obsp[Key.obsp.spatial_dist()] = sps.csr_matrix(
             [[0, 1, 4, 4], [1, 0, 6, 3], [4, 6, 0, 9], [4, 3, 9, 0]]
         )
-        non_visium_adata.obs["cluster"] = [0, 1, 2, 3]
+        non_visium_adata.obs["cluster"] = ["0", "1", "2", "3"]
 
         correct_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].copy()
         correct_conns.setdiag(0)
@@ -101,7 +102,7 @@ class TestRemoveIntraClusterLinks:
         non_visium_adata.obsp[Key.obsp.spatial_dist()] = sps.csr_matrix(
             [[0, 1, 4, 4], [1, 0, 6, 3], [4, 6, 0, 9], [4, 3, 9, 0]]
         )
-        non_visium_adata.obs["cluster"] = [0, 0, 1, 1]
+        non_visium_adata.obs["cluster"] = ["0", "0", "1", "1"]
 
         correct_conns = non_visium_adata.obsp[Key.obsp.spatial_conn()].copy()
         correct_dists = non_visium_adata.obsp[Key.obsp.spatial_dist()].copy()
@@ -137,7 +138,7 @@ class TestConnectedComponents:
                 ]
             )
         )
-        correct_components = np.array([0, 0, 1, 1])
+        correct_components = np.array(["0", "0", "1", "1"])
 
         components = cc.gr.connected_components(adata, min_cells=0, copy=True)
 
@@ -148,7 +149,7 @@ class TestConnectedComponents:
         np.testing.assert_array_equal(adata.obs["comp"].values, correct_components)
 
     def test_connected_components_cluster(self):
-        adata = AnnData(X=np.full((4, 2), 1), obs={"cluster": [0, 0, 1, 1]})
+        adata = AnnData(X=np.full((4, 2), 1), obs={"cluster": ["0", "0", "1", "1"]})
 
         adata.obsp[Key.obsp.spatial_conn()] = sps.csr_matrix(
             np.array(
@@ -160,7 +161,7 @@ class TestConnectedComponents:
                 ]
             )
         )
-        correct_components = np.array([0, 0, 1, 1])
+        correct_components = np.array(["0", "0", "1", "1"])
 
         components = cc.gr.connected_components(adata, cluster_key="cluster", min_cells=0, copy=True)
 
@@ -171,7 +172,7 @@ class TestConnectedComponents:
         np.testing.assert_array_equal(adata.obs["comp"].values, correct_components)
 
     def test_connected_components_min_cells(self):
-        adata = AnnData(X=np.full((5, 2), 1), obs={"cluster": [0, 0, 0, 1, 1]})
+        adata = AnnData(X=np.full((5, 2), 1), obs={"cluster": ["0", "0", "0", "1", "1"]})
 
         adata.obsp[Key.obsp.spatial_conn()] = sps.csr_matrix(
             np.array(
@@ -184,12 +185,14 @@ class TestConnectedComponents:
                 ]
             )
         )
-        correct_components = np.array([0, 0, 0, 1, 1])
+        correct_components = np.array(["0", "0", "0", "1", "1"])
         components = cc.gr.connected_components(adata, cluster_key="cluster", min_cells=2, copy=True)
         np.testing.assert_array_equal(components, correct_components)
 
-        correct_components = np.array([0, 0, 0, np.nan, np.nan])
+        correct_components = pd.Series(["0", "0", "0", "-1", "-1"])
         components = cc.gr.connected_components(adata, cluster_key="cluster", min_cells=3, copy=True)
+        components = components.add_categories(["-1"])
+        components = components.fillna("-1")
         np.testing.assert_array_equal(components, correct_components)
 
     def test_codex(self, codex_adata: AnnData):
