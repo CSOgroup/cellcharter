@@ -317,4 +317,4 @@ class Cluster(GaussianMixture):
             Number of clusters to predict using the fitted model. If ``None``, the number of clusters with the highest stability will be selected. If ``max_runs > 1``, the model with the largest marginal likelihood will be used among the ones fitted on ``k``.
         """
         X = adata.X if use_rep is None else adata.obsm[use_rep]
-        return pd.Categorical(super().predict(X), categories=np.arange(self.n_clusters))
+        return pd.Categorical(super().predict(X).astype(str), categories=np.arange(self.n_clusters).astype(str))
