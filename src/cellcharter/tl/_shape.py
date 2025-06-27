@@ -4,19 +4,50 @@ import warnings
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import h5py
 import networkx as nx
 import numpy as np
 import pandas as pd
 import shapely
 import sknw
 from anndata import AnnData
+from anndata._io.specs.registry import _REGISTRY, IOSpec
+from h5py import Dataset, Group
 from matplotlib.path import Path
 from rasterio import features
 from scipy.spatial import Delaunay
-from shapely import geometry
+from shapely import geometry, wkb
+from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 from skimage.morphology import skeletonize
 from squidpy._docs import d
+
+# 1. Define a custom encoding spec
+polygon_spec = IOSpec(encoding_type="polygon", encoding_version="1.0.0")
+
+
+# 2. Writer: Polygon → WKB → uint8 vlen array (object-path)
+@_REGISTRY.register_write(Group, Polygon, polygon_spec)
+def _write_polygon(group: Group, key: str, poly: Polygon, *, _writer, dataset_kwargs):
+    # 2.1 Serialize to WKB bytes
+    raw: bytes = wkb.dumps(poly)
+    # 2.2 View as a 1D uint8 array
+    arr: np.ndarray = np.frombuffer(raw, dtype=np.uint8)
+    # 2.3 Create a vlen dtype over uint8
+    dt = h5py.special_dtype(vlen=np.dtype("uint8"))
+    # 2.4 Create an empty length-1 dataset with that dtype
+    dset = group.create_dataset(key, shape=(1,), dtype=dt)
+    # 2.5 Assign element-wise to invoke object-path conversion
+    dset[0] = arr
+
+
+# 3. Reader: uint8 vlen array → bytes → Polygon
+@_REGISTRY.register_read(Dataset, polygon_spec)
+def _read_polygon(dataset: Dataset, *, _reader) -> Polygon:
+    # 3.1 dataset[0] returns the inner uint8 array
+    arr: np.ndarray = dataset[0]
+    # 3.2 Recover raw WKB and load
+    return wkb.loads(arr.tobytes())
 
 
 def _alpha_shape(coords, alpha):
