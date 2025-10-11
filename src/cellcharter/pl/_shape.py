@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import spatialdata as sd
-import spatialdata_plot  # noqa: F401
 from anndata import AnnData
 from squidpy._docs import d
 
@@ -99,10 +97,26 @@ def boundaries(
     kwargs
         Additional arguments to pass to the `spatialdata.pl.render_shapes()` function.
 
+    Notes
+    -----
+    To visualize boundaries with this function, install `spatialdata` and
+    `spatialdata-plot`, or install the optional extra:
+
+    - `pip install "cellcharter[shape]"`
+
     Returns
     -------
     %(plotting_returns)s
     """
+    # Optional dependency check
+    try:
+        import spatialdata as sd  # type: ignore
+        import spatialdata_plot  # noqa: F401
+    except ImportError as err:
+        raise ImportError(
+            "pl.boundaries requires 'spatialdata' and 'spatialdata-plot'. Install them with\n"
+            "    pip install spatialdata spatialdata-plot"
+        ) from err
     adata = adata[adata.obs[library_key] == sample].copy()
     del adata.raw
     clusters = adata.obs[component_key].unique()
@@ -234,8 +248,9 @@ def plot_shape_metrics(
     component_key: str = "component",
     metrics: str | tuple[str] | list[str] = ("linearity", "curl"),
     figsize: tuple[float, float] = (8, 7),
-    title: str | None = None,
-) -> None:
+    save: str | Path | None = None,
+    return_fig: bool = False,
+):
     """
     Boxplots of the shape metrics between two conditions.
 
@@ -270,7 +285,7 @@ def plot_shape_metrics(
         FutureWarning,
         stacklevel=2,
     )
-    shape_metrics(
+    return shape_metrics(
         adata=adata,
         condition_key=condition_key,
         condition_groups=condition_groups,
@@ -279,7 +294,8 @@ def plot_shape_metrics(
         component_key=component_key,
         metrics=metrics,
         figsize=figsize,
-        title=title,
+        save=save,
+        return_fig=return_fig,
     )
 
 
@@ -364,7 +380,9 @@ def shape_metrics(
     fontsize: str | int = 14,
     figsize: tuple[float, float] = (10, 7),
     ncols: int = 2,
-) -> None:
+    save: str | Path | None = None,
+    return_fig: bool = False,
+):
     """
     Boxplots of the shape metrics between two conditions.
 
@@ -387,12 +405,27 @@ def shape_metrics(
         Figure size.
     ncols
         Number of columns in the subplot grid when plotting multiple metrics.
-    title
-        Title of the plot.
+    save
+        Path to save the plot. If provided, the plot will be saved using default parameters (``bbox_inches='tight'``).
+        For more control over saving parameters, use ``return_fig=True`` and call ``savefig()`` manually.
+    return_fig
+        If ``True``, return the figure object for further customization. Default is ``False``.
 
     Returns
     -------
-    %(plotting_returns)s
+    If ``return_fig=True``, returns the :class:`matplotlib.figure.Figure` object.
+    Otherwise returns ``None``.
+
+    Examples
+    --------
+    Basic usage with automatic saving:
+
+    >>> cc.pl.shape_metrics(adata, condition_key='condition', save='plot.pdf')
+
+    Advanced usage with custom save parameters:
+
+    >>> fig = cc.pl.shape_metrics(adata, condition_key='condition', return_fig=True)
+    >>> fig.savefig('plot.pdf', dpi=300, bbox_inches='tight', transparent=True)
     """
     if isinstance(metrics, str):
         metrics = [metrics]
@@ -426,6 +459,9 @@ def shape_metrics(
         keys.append(cluster_key)
 
     metrics_df = adata.obs[[component_key] + keys].drop_duplicates().dropna().set_index(component_key)
+
+    # Initialize fig to None - will be set in one of the code paths below
+    fig = None
 
     for metric in metrics:
         metrics_df[metric] = metrics_df.index.map(adata.uns[f"shape_{component_key}"][metric])
@@ -539,3 +575,14 @@ def shape_metrics(
         # Hide any unused subplots
         for j in range(i + 1, len(axes)):
             axes[j].set_visible(False)
+
+    # If fig wasn't set in any code path (edge case), get the current figure
+    if fig is None:
+        fig = plt.gcf()
+
+    if save is not None:
+        fig.savefig(save, bbox_inches="tight")
+
+    if return_fig:
+        return fig
+    return None
