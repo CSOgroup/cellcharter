@@ -27,7 +27,7 @@ def _download_codex(path: Path) -> None:
     tmp_path = path.with_suffix(f"{path.suffix}.part")
     request = Request(_CODEX_URL, headers={"User-Agent": "cellcharter-tests"})
 
-    with urlopen(request) as response, tmp_path.open("wb") as output:
+    with urlopen(request, timeout=60) as response, tmp_path.open("wb") as output:
         chunk_size = 1024 * 1024
         while True:
             chunk = response.read(chunk_size)
@@ -69,6 +69,7 @@ def codex_adata() -> ad.AnnData:
             adata.obs_names_make_unique()
             return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
         except (HTTPError, URLError, OSError) as e:
+            _CODEX_PATH.unlink(missing_ok=True)  # Force re-download on next attempt
             if attempt == max_retries - 1:  # Last attempt
                 pytest.skip(f"Failed to download test data after {max_retries} attempts: {str(e)}")
             time.sleep(retry_delay)
