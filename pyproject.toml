@@ -13,7 +13,7 @@ name = "cellcharter"
 version = "0.3.6"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
-requires-python = ">=3.11,<3.14" # include 3.13 once spatialdata allows it (waiting for multicale-spatial-image to allow it)
+requires-python = ">=3.11,<3.14"
 license = {file = "LICENSE"}
 authors = [
     {name = "CSO group"},
