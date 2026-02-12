@@ -48,7 +48,8 @@ def _is_hdf5_file(path: Path) -> bool:
 def _normalize_figshare_url(url: str) -> str:
     parsed = urlparse(url)
     if parsed.netloc == "figshare.com" and parsed.path.startswith("/ndownloader/files/"):
-        return f"https://ndownloader.figshare.com{parsed.path}"
+        # Strip the /ndownloader prefix, keeping only /files/...
+        return f"https://ndownloader.figshare.com{parsed.path.removeprefix('/ndownloader')}"
     return url
 
 
@@ -59,7 +60,7 @@ def _download_file(url: str, destination: Path) -> None:
     request = Request(_normalize_figshare_url(url), headers={"User-Agent": "cellcharter-datasets"})
     progress = None
     try:
-        with urlopen(request) as response, tmp_destination.open("wb") as output:
+        with urlopen(request, timeout=60) as response, tmp_destination.open("wb") as output:
             content_length = response.headers.get("Content-Length")
             total = int(content_length) if content_length and content_length.isdigit() else None
             if tqdm is not None:
@@ -73,10 +74,12 @@ def _download_file(url: str, destination: Path) -> None:
                 output.write(chunk)
                 if progress is not None:
                     progress.update(len(chunk))
-    except (HTTPError, URLError) as error:
+    except Exception as error:  # noqa: B902
         if tmp_destination.exists():
             tmp_destination.unlink()
-        raise RuntimeError(f"Failed to download dataset from {url}.") from error
+        if isinstance(error, (HTTPError, URLError)):
+            raise RuntimeError(f"Failed to download dataset from {url}.") from error
+        raise error
     finally:
         if progress is not None:
             progress.close()
