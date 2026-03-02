@@ -143,7 +143,7 @@ def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 
     components, counts = np.unique(labels, return_counts=True)
 
     small_components = components[counts < min_cells]
-    small_components_idxs = np.in1d(labels, small_components)
+    small_components_idxs = np.isin(labels, small_components)
 
     labels[small_components_idxs] = -1
     labels[~small_components_idxs] = pd.factorize(labels[~small_components_idxs])[0] + count
