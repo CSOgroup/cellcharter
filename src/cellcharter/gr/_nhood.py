@@ -307,7 +307,13 @@ def _diff_nhood_enrichment(
                     for samples_condition1_permuted in sample_perm_generator:
                         condition_permuted = pd.Categorical(libraries.isin(samples_condition1_permuted).astype(int))
                         expected_diff_enrichment = _diff_nhood_enrichment(
-                            labels, condition_permuted, [0, 1], libraries, connectivities, pvalues=False, **nhood_kwargs
+                            labels=labels,
+                            conditions=condition_permuted,
+                            condition_groups=[0, 1],
+                            libraries=libraries,
+                            connectivities=connectivities,
+                            pvalues=False,
+                            **nhood_kwargs,
                         )["0_1"]["enrichment"]
 
                         counts_pos = (
