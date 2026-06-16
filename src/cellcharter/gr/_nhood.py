@@ -70,6 +70,12 @@ def _observed_permuted(adj, labels, observed, symmetric=True, batch_size=1):
     return results
 
 
+def _with_diagonal(df: pd.DataFrame, value: float) -> pd.DataFrame:
+    values = df.to_numpy(copy=True)
+    np.fill_diagonal(values, value)
+    return pd.DataFrame(values, columns=df.columns, index=df.index)
+
+
 def _nhood_enrichment(
     adj,
     labels,
@@ -83,7 +89,7 @@ def _nhood_enrichment(
     observed_expected=False,
 ):
     if only_inter:
-        adj = _remove_intra_cluster_links(labels, adj)
+        adj = _remove_intra_cluster_links(labels, adj.copy())
 
     cluster_categories = labels.cat.categories
 
@@ -140,9 +146,9 @@ def _nhood_enrichment(
 
     enrichment = np.log2(observed / expected) if log_fold_change else observed - expected
     if only_inter:
-        np.fill_diagonal(observed.values, np.nan)
-        np.fill_diagonal(expected.values, np.nan)
-        np.fill_diagonal(enrichment.values, np.nan)
+        observed = _with_diagonal(observed, np.nan)
+        expected = _with_diagonal(expected, np.nan)
+        enrichment = _with_diagonal(enrichment, np.nan)
 
     result = {"enrichment": enrichment}
 
