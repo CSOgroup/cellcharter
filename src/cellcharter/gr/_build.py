@@ -75,6 +75,9 @@ def remove_long_links(
 
 
 def _remove_intra_cluster_links(labels, adjacency):
+    if not adjacency.data.flags.writeable:
+        adjacency = adjacency.copy()
+
     target_labels = np.array(labels.iloc[adjacency.indices])
     source_labels = np.array(
         labels.iloc[np.repeat(np.arange(adjacency.indptr.shape[0] - 1), np.diff(adjacency.indptr))]
@@ -132,10 +135,14 @@ def remove_intra_cluster_links(
     conns = adata.obsp[connectivity_key].copy() if copy else adata.obsp[connectivity_key]
     dists = adata.obsp[distances_key].copy() if copy else adata.obsp[distances_key]
 
-    conns, dists = (_remove_intra_cluster_links(adata.obs[cluster_key], adjacency) for adjacency in [conns, dists])
+    conns = _remove_intra_cluster_links(adata.obs[cluster_key], conns)
+    dists = _remove_intra_cluster_links(adata.obs[cluster_key], dists)
 
     if copy:
         return conns, dists
+
+    adata.obsp[connectivity_key] = conns
+    adata.obsp[distances_key] = dists
 
 
 def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 0) -> np.ndarray:

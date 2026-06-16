@@ -83,7 +83,7 @@ def _nhood_enrichment(
     observed_expected=False,
 ):
     if only_inter:
-        adj = _remove_intra_cluster_links(labels, adj)
+        adj = _remove_intra_cluster_links(labels, adj.copy())
 
     cluster_categories = labels.cat.categories
 
