@@ -19,3 +19,14 @@ __pycache__/
 # docs
 /docs/generated/
 /docs/_build/
+
+# Project build and local files
+/build/
+/*.egg-info/
+/.idea/
+/.vscode/
+docs/notebooks/tutorial_data
+docs/jupyter_execute
+.ipynb_checkpoints
+*.ipynb
+trash
