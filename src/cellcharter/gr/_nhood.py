@@ -140,9 +140,10 @@ def _nhood_enrichment(
 
     enrichment = np.log2(observed / expected) if log_fold_change else observed - expected
     if only_inter:
-        np.fill_diagonal(observed.values, np.nan)
-        np.fill_diagonal(expected.values, np.nan)
-        np.fill_diagonal(enrichment.values, np.nan)
+        diagonal_mask = np.eye(len(observed), dtype=bool)
+        observed = observed.mask(diagonal_mask, np.nan)
+        expected = expected.mask(diagonal_mask, np.nan)
+        enrichment = enrichment.mask(diagonal_mask, np.nan)
 
     result = {"enrichment": enrichment}
 
