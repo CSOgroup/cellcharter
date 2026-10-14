@@ -31,8 +31,11 @@ jobs:
             python: "3.13"
             pip-flags: "--pre"
             name: PRE-RELEASE DEPENDENCIES
+            experimental: true
 
     name: ${{ matrix.name }} Python ${{ matrix.python }}
+    # Pre-release failures are reported but do not fail the workflow
+    continue-on-error: ${{ matrix.experimental == true }}
 
     env:
       OS: ${{ matrix.os }}
