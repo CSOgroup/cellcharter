@@ -100,7 +100,6 @@ class TestRelativeComponentSize:
 
         # Neighborhood 1 is split 50% into component 1 and 50% into component 2
         comp_1_count = nbh_1_count // 2
-        nbh_1_count - comp_1_count
 
         # Create domain (neighborhood) assignments
         domains = np.zeros(total_cells, dtype=int)
