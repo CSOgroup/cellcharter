@@ -1,7 +1,9 @@
+import anndata as ad
 import numpy as np
 import pytest
 import scipy.sparse as sps
 import squidpy as sq
+from sklearn.datasets import make_blobs
 
 import cellcharter as cc
 
@@ -29,3 +31,23 @@ class TestClusterAutoK:
         adata.obs[f"cellcharter_{autok.best_k}"] = autok.predict(adata, use_rep="X_cellcharter", k=autok.best_k)
 
         assert len(np.unique(adata.obs[f"cellcharter_{autok.best_k}"])) == autok.best_k
+
+    def test_random_state_reproducible(self):
+        X, _ = make_blobs(n_samples=500, n_features=10, centers=4, cluster_std=3.0, random_state=0)
+        adata = ad.AnnData(X=np.zeros((X.shape[0], 2), dtype=np.float32))
+        adata.obsm["X_rep"] = X.astype(np.float32)
+
+        def fit():
+            model_params = {
+                "random_state": 0,
+                "trainer_params": {"accelerator": "cpu", "enable_progress_bar": False},
+            }
+            autok = cc.tl.ClusterAutoK(
+                n_clusters=(2, 5), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=2
+            )
+            autok.fit(adata, use_rep="X_rep")
+            return autok
+
+        autok1, autok2 = fit(), fit()
+        assert autok1.best_k == autok2.best_k
+        np.testing.assert_allclose(autok1.stability, autok2.stability)

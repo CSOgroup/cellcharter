@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from typing import List, Tuple, cast
 
 import anndata as ad
@@ -112,7 +113,25 @@ class GaussianMixture(TorchGaussianMixture):
             raise ValueError(
                 "Sparse data is not supported. You may have forgotten to reduce the dimensionality of the data. Otherwise, please convert the data to a dense format."
             )
-        return self._fit(data)
+        if self.random_state is None:
+            return self._fit(data)
+
+        seed = self.random_state
+        if isinstance(seed, np.random.RandomState):
+            seed = int(seed.randint(np.iinfo(np.int32).max))
+
+        # torchgmm does not accept a seed, so we seed the global RNGs used during fitting (e.g. by the K-means
+        # initialization), restoring their state afterwards to avoid side effects.
+        python_state, numpy_state = random.getstate(), np.random.get_state()
+        try:
+            with torch.random.fork_rng():
+                random.seed(seed)
+                np.random.seed(seed % 2**32)
+                torch.manual_seed(seed)
+                return self._fit(data)
+        finally:
+            random.setstate(python_state)
+            np.random.set_state(numpy_state)
 
     def _fit(self, data) -> GaussianMixture:
         try:
