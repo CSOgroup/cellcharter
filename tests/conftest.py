@@ -45,7 +45,7 @@ def _download_codex(path: Path) -> None:
 @pytest.fixture()
 def non_visium_adata() -> ad.AnnData:
     non_visium_coords = np.array([[1, 0], [3, 0], [5, 6], [0, 4]])
-    adata = ad.AnnData(X=non_visium_coords, dtype=int)
+    adata = ad.AnnData(X=non_visium_coords.astype(int))
     adata.obsm[Key.obsm.spatial] = non_visium_coords
     return adata
 
