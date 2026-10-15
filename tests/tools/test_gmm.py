@@ -51,11 +51,16 @@ class TestGaussianMixture:
     def test_random_state_preserves_global_rng(self):
         X = self._data()
 
+        def seed():
+            random.seed(123)
+            np.random.seed(123)
+            torch.manual_seed(123)
+
         def draw():
             return random.random(), np.random.rand(), torch.rand(1).item()
 
-        random.seed(123), np.random.seed(123), torch.manual_seed(123)
+        seed()
         expected = draw()
-        random.seed(123), np.random.seed(123), torch.manual_seed(123)
+        seed()
         self._fit_labels(X, 0)
         assert draw() == expected

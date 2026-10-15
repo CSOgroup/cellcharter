@@ -108,6 +108,9 @@ class ClusterAutoK:
         random_state = self.model_params.pop("random_state", 0)
         if isinstance(random_state, np.random.RandomState):
             random_state = int(random_state.randint(np.iinfo(np.int32).max))
+        elif random_state is not None and random_state < 0:
+            # SeedSequence only accepts non-negative entropy
+            random_state %= 2**32
         # Derive independent per-run seeds, so that instances with close random states do not share runs.
         run_seeds = [int(s.generate_state(1)[0]) for s in np.random.SeedSequence(random_state).spawn(self.max_runs)]
 

@@ -32,14 +32,15 @@ class TestClusterAutoK:
 
         assert len(np.unique(adata.obs[f"cellcharter_{autok.best_k}"])) == autok.best_k
 
-    def test_random_state_reproducible(self):
+    @pytest.mark.parametrize("random_state", [0, -1])
+    def test_random_state_reproducible(self, random_state: int):
         X, _ = make_blobs(n_samples=500, n_features=10, centers=4, cluster_std=3.0, random_state=0)
         adata = ad.AnnData(X=np.zeros((X.shape[0], 2), dtype=np.float32))
         adata.obsm["X_rep"] = X.astype(np.float32)
 
         def fit():
             model_params = {
-                "random_state": 0,
+                "random_state": random_state,
                 "trainer_params": {"accelerator": "cpu", "enable_progress_bar": False},
             }
             autok = cc.tl.ClusterAutoK(

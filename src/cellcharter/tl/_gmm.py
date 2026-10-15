@@ -58,7 +58,9 @@ class GaussianMixture(TorchGaussianMixture):
         level. This estimator further sets the following overridable defaults:
         - ``max_epochs=100``.
     random_state
-        Initialization seed.
+        Initialization seed. Since ``torchgmm`` relies on the global Python, NumPy and PyTorch random number
+        generators, they are seeded during ``fit`` and restored afterwards. Seeded fits are therefore not
+        reproducible if other threads use these generators concurrently.
 
     """
 
