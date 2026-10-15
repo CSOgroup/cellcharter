@@ -106,6 +106,13 @@ class ClusterAutoK:
         self.best_models = {}
 
         random_state = self.model_params.pop("random_state", 0)
+        if isinstance(random_state, np.random.RandomState):
+            random_state = int(random_state.randint(np.iinfo(np.int32).max))
+        elif random_state is not None and random_state < 0:
+            # SeedSequence only accepts non-negative entropy
+            random_state %= 2**32
+        # Derive independent per-run seeds, so that instances with close random states do not share runs.
+        run_seeds = [int(s.generate_state(1)[0]) for s in np.random.SeedSequence(random_state).spawn(self.max_runs)]
 
         if ("trainer_params" not in self.model_params) or (
             "enable_progress_bar" not in self.model_params["trainer_params"]
@@ -120,7 +127,7 @@ class ClusterAutoK:
             for k in tqdm(self.n_clusters, disable=(len(self.n_clusters) == 1)):
                 logging_level = logging.getLogger("lightning.pytorch").getEffectiveLevel()
                 logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
-                clustering = self.model_class(n_clusters=k, random_state=i + random_state, **self.model_params)
+                clustering = self.model_class(n_clusters=k, random_state=run_seeds[i], **self.model_params)
                 clustering.fit(X)
                 new_labels[k] = clustering.predict(X)
 
