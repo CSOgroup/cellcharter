@@ -13,7 +13,7 @@ name = "cellcharter"
 version = "0.3.7"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.12,<3.14"
 license = {file = "LICENSE"}
 authors = [
     {name = "CSO group"},
@@ -27,6 +27,8 @@ urls.Home-page = "https://github.com/CSOgroup/cellcharter"
 dependencies = [
     "anndata",
     "scikit-learn",
+    # scipy < 1.18 overflows when subsetting sparse obsp matrices of samples with > 46,340 cells (#108)
+    "scipy >= 1.18",
     "squidpy >= 1.6.3",
     "torchgmm >= 0.1.4",
     # for debug logging (referenced from the issue template)
