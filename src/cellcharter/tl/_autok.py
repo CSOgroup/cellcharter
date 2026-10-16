@@ -33,7 +33,10 @@ class ClusterAutoK:
     Parameters
     ----------
     n_clusters
-        Range for number of clusters (bounds included).
+        Numbers of clusters to evaluate. Either a tuple ``(min, max)`` defining a range (bounds included), or a list
+        of values, which can be non-consecutive (e.g. ``[5, 10, 15, 20]``). The stability of each `K` is computed
+        against `K-1` and `K+1`, so these neighbors are also fitted when they are not already included.
+        Values lower than 2 cannot be evaluated and are ignored.
     max_runs
         Maximum number of repetitions for each value of number of clusters.
     convergence_tol
@@ -63,7 +66,7 @@ class ClusterAutoK:
     #: The cluster assignments for each repetition and number of clusters.
     labels: dict
 
-    #: The stability values of all combinations of runs between K and K-1, and between K and K+1
+    #: The stability values of all combinations of runs between K and K-1, and between K and K+1, for each K in `n_clusters`
     stability: np.ndarray
 
     def __init__(
@@ -75,17 +78,25 @@ class ClusterAutoK:
         model_params: dict = None,
         similarity_function: callable = None,
     ):
-        self.n_clusters = (
-            list(range(*(max(1, n_clusters[0] - 1), n_clusters[1] + 2)))
-            if isinstance(n_clusters, tuple)
-            else n_clusters
-        )
+        n_clusters = range(n_clusters[0], n_clusters[1] + 1) if isinstance(n_clusters, tuple) else n_clusters
+        n_clusters = sorted({int(k) for k in n_clusters})
+        if any(k < 2 for k in n_clusters):
+            warnings.warn("Stability cannot be computed for less than 2 clusters, ignoring them.", stacklevel=2)
+            n_clusters = [k for k in n_clusters if k >= 2]
+        if len(n_clusters) == 0:
+            raise ValueError("`n_clusters` must contain at least one value greater than or equal to 2.")
+        self.n_clusters = n_clusters
         self.max_runs = max_runs
         self.convergence_tol = convergence_tol
         self.model_class = model_class if model_class else cc.tl.GaussianMixture
         self.model_params = model_params if model_params else {}
         self.similarity_function = similarity_function if similarity_function else fowlkes_mallows_score
         self.stability = []
+
+    @property
+    def _fit_n_clusters(self) -> List[int]:
+        """Numbers of clusters to fit: each K in `n_clusters` together with its neighbors K-1 and K+1."""
+        return sorted({k + d for k in self.n_clusters for d in (-1, 0, 1)})
 
     def fit(self, adata: ad.AnnData, use_rep: str = "X_cellcharter"):
         """
@@ -119,12 +130,15 @@ class ClusterAutoK:
         trainer_params = self.model_params.get("trainer_params") or {}
         self.model_params["trainer_params"] = {"enable_progress_bar": False, **trainer_params}
 
+        fit_n_clusters = self._fit_n_clusters
+        # Stability between K and K+1, for each K such that both K and K+1 are fitted
+        pair_stability = defaultdict(list)
         previous_stability = None
         for i in range(self.max_runs):
             print(f"Iteration {i + 1}/{self.max_runs}")
             new_labels = {}
 
-            for k in tqdm(self.n_clusters, disable=(len(self.n_clusters) == 1)):
+            for k in tqdm(fit_n_clusters, disable=(len(fit_n_clusters) == 1)):
                 with silence_lightning():
                     clustering = self.model_class(n_clusters=k, random_state=run_seeds[i], **self.model_params)
                     clustering.fit(X)
@@ -134,18 +148,16 @@ class ClusterAutoK:
                     self.best_models[k] = clustering
 
             if i > 0:
+                pair_ks = [k for k in fit_n_clusters if k + 1 in new_labels]
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    pairs = [
-                        (new_labels[k], self.labels[k + 1][i])
-                        for i in range(len(list(self.labels.values())[0]))
-                        for k in list(self.labels.keys())[:-1]
-                    ]
-                    self.stability.extend(list(executor.map(lambda x: self.similarity_function(*x), pairs)))
+                    for k in pair_ks:
+                        pairs = [(new_labels[k], previous_labels) for previous_labels in self.labels[k + 1]]
+                        pair_stability[k].extend(executor.map(lambda x: self.similarity_function(*x), pairs))
 
                 if previous_stability is not None:
                     stability_change = mean_absolute_percentage_error(
                         np.mean(self._mirror_stability(previous_stability), axis=1),
-                        np.mean(self._mirror_stability(self.stability), axis=1),
+                        np.mean(self._mirror_stability(pair_stability), axis=1),
                     )
                     if stability_change < self.convergence_tol:
                         for k, new_l in new_labels.items():
@@ -155,40 +167,36 @@ class ClusterAutoK:
                         )
                         break
 
-                previous_stability = deepcopy(self.stability)
+                previous_stability = deepcopy(pair_stability)
 
             for k, new_l in new_labels.items():
                 self.labels[k].append(new_l)
 
         if self.max_runs > 1:
-            self.stability = self._mirror_stability(self.stability)
+            self.stability = self._mirror_stability(pair_stability)
         else:
             self.stability = None
 
-    def _mirror_stability(self, stability):
-        stability = [
-            stability[i : i + len(self.n_clusters) - 1] for i in range(0, len(stability), len(self.n_clusters) - 1)
-        ]
-        stability = list(map(list, zip(*stability)))
-        return np.array([stability[i] + stability[i - 1] for i in range(1, len(stability))])
+    def _mirror_stability(self, pair_stability: dict) -> np.ndarray:
+        """For each K in `n_clusters`, combine its stability with K+1 and with K-1."""
+        return np.array([pair_stability[k] + pair_stability[k - 1] for k in self.n_clusters])
 
     @property
     def best_k(self) -> int:
         """The number of clusters with the highest stability."""
         if self.max_runs <= 1:
             raise ValueError("Cannot compute stability with max_runs <= 1")
-        stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
-        best_idx = np.argmax(stability_mean)
-        return self.n_clusters[best_idx + 1]
+        stability_mean = np.mean(self.stability, axis=1)
+        return self.n_clusters[np.argmax(stability_mean)]
 
     @property
     def peaks(self) -> List[int]:
         """Find the peaks in the stability curve."""
         if self.max_runs <= 1:
             raise ValueError("Cannot compute stability with max_runs <= 1")
-        stability_mean = np.array([np.mean(self.stability[k]) for k in range(len(self.n_clusters[1:-1]))])
+        stability_mean = np.mean(self.stability, axis=1)
         peaks, _ = find_peaks(stability_mean)
-        return np.array(self.n_clusters[1:-1])[peaks]
+        return np.array(self.n_clusters)[peaks]
 
     def predict(self, adata: ad.AnnData, use_rep: str = None, k: int = None) -> pd.Categorical:
         """
@@ -204,7 +212,7 @@ class ClusterAutoK:
             Number of clusters to predict using the fitted model. If ``None``, the number of clusters with the highest stability will be selected. If ``max_runs > 1``, the model with the largest marginal likelihood will be used among the ones fitted on ``k``.
         """
         k = self.best_k if k is None else k
-        assert k is None or k in self.n_clusters
+        assert k in self.best_models, f"No model was fitted with {k} clusters"
 
         X = (
             adata.obsm[use_rep]
@@ -350,7 +358,10 @@ class ClusterAutoK:
             with pickle_path.open("rb") as f:
                 params = pickle.load(f)
 
-        return cls(**params)
+        with warnings.catch_warnings():
+            # Models saved with older versions also stored K=1 as neighbor of K=2
+            warnings.filterwarnings("ignore", message="Stability cannot be computed")
+            return cls(**params)
 
     def _load_attributes(self, path: Path) -> None:
         """
@@ -377,6 +388,10 @@ class ClusterAutoK:
         else:
             with pickle_path.open("rb") as f:
                 self.set_params(pickle.load(f))
+
+        # Models saved with older versions stored in `n_clusters` also the K-1 and K+1 neighbors of the evaluated range
+        if self.stability is not None and len(self.stability) == len(self.labels) - 2:
+            self.n_clusters = sorted(self.labels)[1:-1]
 
         self.best_models = {}
         for model_dir in os.listdir(path / "best_models"):
