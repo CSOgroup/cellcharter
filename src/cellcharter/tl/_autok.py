@@ -21,6 +21,7 @@ from torchgmm.base.utils.path import PathType
 from tqdm.auto import tqdm
 
 import cellcharter as cc
+from cellcharter._utils import silence_lightning
 
 logger = logging.getLogger(__name__)
 
@@ -125,10 +126,9 @@ class ClusterAutoK:
         # Derive independent per-run seeds, so that instances with close random states do not share runs.
         run_seeds = [int(s.generate_state(1)[0]) for s in np.random.SeedSequence(random_state).spawn(self.max_runs)]
 
-        if ("trainer_params" not in self.model_params) or (
-            "enable_progress_bar" not in self.model_params["trainer_params"]
-        ):
-            self.model_params["trainer_params"] = {"enable_progress_bar": False}
+        # Disable the progress bar by default, without discarding other user-provided trainer params.
+        trainer_params = self.model_params.get("trainer_params") or {}
+        self.model_params["trainer_params"] = {"enable_progress_bar": False, **trainer_params}
 
         fit_n_clusters = self._fit_n_clusters
         # Stability between K and K+1, for each K such that both K and K+1 are fitted
@@ -139,13 +139,10 @@ class ClusterAutoK:
             new_labels = {}
 
             for k in tqdm(fit_n_clusters, disable=(len(fit_n_clusters) == 1)):
-                logging_level = logging.getLogger("lightning.pytorch").getEffectiveLevel()
-                logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
-                clustering = self.model_class(n_clusters=k, random_state=run_seeds[i], **self.model_params)
-                clustering.fit(X)
-                new_labels[k] = clustering.predict(X)
-
-                logging.getLogger("lightning.pytorch").setLevel(logging_level)
+                with silence_lightning():
+                    clustering = self.model_class(n_clusters=k, random_state=run_seeds[i], **self.model_params)
+                    clustering.fit(X)
+                    new_labels[k] = clustering.predict(X)
 
                 if (k not in self.best_models.keys()) or (clustering.nll_ < self.best_models[k].nll_):
                     self.best_models[k] = clustering

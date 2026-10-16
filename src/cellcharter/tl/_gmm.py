@@ -20,7 +20,7 @@ from torchgmm.bayes import GaussianMixture as TorchGaussianMixture
 from torchgmm.bayes.gmm.lightning_module import GaussianMixtureLightningModule
 from torchgmm.bayes.gmm.model import GaussianMixtureModel
 
-from .._utils import AnyRandom
+from .._utils import AnyRandom, silence_lightning
 
 logger = logging.getLogger(__name__)
 
@@ -115,9 +115,12 @@ class GaussianMixture(TorchGaussianMixture):
             raise ValueError(
                 "Sparse data is not supported. You may have forgotten to reduce the dimensionality of the data. Otherwise, please convert the data to a dense format."
             )
-        if self.random_state is None:
-            return self._fit(data)
+        with silence_lightning():
+            if self.random_state is None:
+                return self._fit(data)
+            return self._seeded_fit(data)
 
+    def _seeded_fit(self, data) -> GaussianMixture:
         seed = self.random_state
         if isinstance(seed, np.random.RandomState):
             seed = int(seed.randint(np.iinfo(np.int32).max))
@@ -171,7 +174,8 @@ class GaussianMixture(TorchGaussianMixture):
             a subset of the predictions. If you want to aggregate predictions, make sure to gather
             the values returned from this method.
         """
-        return super().predict(data).numpy()
+        with silence_lightning():
+            return super().predict(data).numpy()
 
     def predict_proba(self, data: TensorLike) -> torch.Tensor:
         """
@@ -200,7 +204,8 @@ class GaussianMixture(TorchGaussianMixture):
         )
         trainer_params = self.trainer_params.copy()
         trainer_params["logger"] = False
-        result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
+        with silence_lightning():
+            result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
         return torch.cat([x[0] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
 
     def score_samples(self, data: TensorLike) -> torch.Tensor:
@@ -227,7 +232,8 @@ class GaussianMixture(TorchGaussianMixture):
         )
         trainer_params = self.trainer_params.copy()
         trainer_params["logger"] = False
-        result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
+        with silence_lightning():
+            result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
         return torch.stack([x[1] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
 
 
@@ -311,16 +317,9 @@ class Cluster(GaussianMixture):
         use_rep
             Key in :attr:`anndata.AnnData.obsm` to use as data to fit the clustering model.
         """
-        logging_level = logging.root.level
-
         X = adata.X if use_rep is None else adata.obsm[use_rep]
 
-        logging_level = logging.getLogger("lightning.pytorch").getEffectiveLevel()
-        logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
-
         super().fit(X)
-
-        logging.getLogger("lightning.pytorch").setLevel(logging_level)
 
         adata.uns["_cellcharter"] = {k: v for k, v in self.get_params().items() if k != "init_means"}
 
