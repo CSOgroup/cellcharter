@@ -81,5 +81,7 @@ def _load_codex(path: Path) -> ad.AnnData:
                     pytest.skip(f"Failed to download test data after {max_retries} attempts: {str(e)}")
                 time.sleep(retry_delay)
             else:
-                adata.obs_names_make_unique()
-                return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
+                break
+
+    adata.obs_names_make_unique()
+    return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
