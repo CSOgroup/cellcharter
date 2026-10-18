@@ -40,7 +40,7 @@ def test_concurrent_codex_loads(tmp_path, monkeypatch):
         np.testing.assert_array_equal(adata.X, np.arange(4).reshape(2, 2))
 
 
-@pytest.mark.parametrize("error", [OSError, KeyError])
+@pytest.mark.parametrize("error", [OSError, KeyError, ValueError])
 def test_corrupt_codex_cache_is_retried(tmp_path, monkeypatch, error):
     """Unreadable cached HDF5 files are downloaded again before use."""
     path = tmp_path / "codex.h5ad"

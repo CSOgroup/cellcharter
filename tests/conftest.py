@@ -75,7 +75,7 @@ def _load_codex(path: Path) -> ad.AnnData:
                     path.unlink(missing_ok=True)
                     _download_codex(path)
                 adata = ad.read_h5ad(path)
-            except (HTTPError, URLError, OSError, KeyError) as e:
+            except (HTTPError, URLError, OSError, KeyError, ValueError) as e:
                 path.unlink(missing_ok=True)  # Force re-download on next attempt
                 if attempt == max_retries - 1:  # Last attempt
                     pytest.skip(f"Failed to download test data after {max_retries} attempts: {str(e)}")
