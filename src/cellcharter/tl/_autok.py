@@ -396,9 +396,12 @@ class ClusterAutoK:
             with pickle_path.open("rb") as f:
                 self.set_params(pickle.load(f))
 
-        # Models saved with older versions stored in `n_clusters` also the K-1 and K+1 neighbors of the evaluated range
-        if self.stability is not None and len(self.stability) == len(self.labels) - 2:
-            self.n_clusters = sorted(self.labels)[1:-1]
+        # Legacy parameters stored every fitted K, including the border neighbors.
+        # The constructor may already have discarded K=1. Detect this layout even
+        # for a single run, which has no stability values.
+        fitted_counts = sorted(self.labels)
+        if self.n_clusters == [k for k in fitted_counts if k >= 2]:
+            self.n_clusters = fitted_counts[1:-1]
 
         self.best_models = {}
         for model_dir in os.listdir(path / "best_models"):
