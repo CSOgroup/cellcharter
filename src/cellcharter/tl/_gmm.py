@@ -20,7 +20,7 @@ from torchgmm.bayes import GaussianMixture as TorchGaussianMixture
 from torchgmm.bayes.gmm.lightning_module import GaussianMixtureLightningModule
 from torchgmm.bayes.gmm.model import GaussianMixtureModel
 
-from .._utils import AnyRandom, silence_lightning
+from cellcharter._utils import AnyRandom, silence_lightning
 
 logger = logging.getLogger(__name__)
 

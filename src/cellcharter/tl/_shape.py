@@ -111,7 +111,7 @@ def _process_component(points, component, hole_area_ratio=0.1, alpha_start=2000)
                 difference = boundary.difference(interior_polygon)
                 if isinstance(difference, geometry.Polygon):
                     boundary = difference
-            except Exception:  # noqa: B902
+            except Exception:  # noqa: BLE001 - Keep the original boundary if hole subtraction fails.
                 pass
     return component, boundary
 
@@ -210,7 +210,7 @@ def _longest_path_from_node(graph, u):
         adj_lil = nx.to_scipy_sparse_matrix(graph, format="lil")
     except AttributeError:
         adj_lil = nx.to_scipy_sparse_array(graph, format="lil")
-    adj = {i: [idx2node[neigh] for neigh in neighs] for i, neighs in zip(graph.nodes, adj_lil.rows)}
+    adj = {i: [idx2node[neigh] for neigh in neighs] for i, neighs in zip(graph.nodes, adj_lil.rows, strict=False)}
     weight = nx.get_edge_attributes(graph, "weight")
 
     distance[u] = 0
@@ -367,7 +367,7 @@ def linearity_metric(
 
 def _elongation(boundary):
     # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
-    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy, strict=False))
 
     # calculate the length of each side of the minimum bounding rectangle
     mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
@@ -459,7 +459,7 @@ def elongation_metric(
 
 def _axes(boundary):
     # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
-    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy, strict=False))
     # calculate the length of each side of the minimum bounding rectangle
     mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
     return min(mbr_lengths), max(mbr_lengths)

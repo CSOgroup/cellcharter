@@ -172,7 +172,7 @@ class ClusterAutoK:
         stability = [
             stability[i : i + len(self.n_clusters) - 1] for i in range(0, len(stability), len(self.n_clusters) - 1)
         ]
-        stability = list(map(list, zip(*stability)))
+        stability = list(map(list, zip(*stability, strict=False)))
         return np.array([stability[i] + stability[i - 1] for i in range(1, len(stability))])
 
     @property

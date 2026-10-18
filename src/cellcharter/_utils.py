@@ -4,11 +4,10 @@ import logging
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Union
 
 import numpy as np
 
-AnyRandom = Union[int, np.random.RandomState, None]
+AnyRandom = int | np.random.RandomState | None
 
 
 def str2list(value: str | list) -> list:
@@ -46,5 +45,5 @@ def silence_lightning() -> Iterator[None]:
         with _silence_lock:
             _silence_depth -= 1
             if _silence_depth == 0:
-                for lg, previous_level in zip(loggers, _silence_previous_levels):
+                for lg, previous_level in zip(loggers, _silence_previous_levels, strict=False):
                     lg.setLevel(previous_level)
