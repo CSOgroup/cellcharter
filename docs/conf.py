@@ -26,8 +26,8 @@ project = info["Name"]
 author = info["Author"]
 copyright = f"{datetime.now():%Y}, {author}."
 version = info["Version"]
-urls = dict(pu.split(", ") for pu in info.get_all("Project-URL"))
-repository_url = urls["Source"]
+urls = dict(pu.split(", ", 1) for pu in (info.get_all("Project-URL") or []))
+repository_url = urls.get("Source", "https://github.com/CSOgroup/cellcharter")
 
 # The full version, including alpha/beta/rc tags
 release = info["Version"]
