@@ -57,9 +57,15 @@ def adata() -> ad.AnnData:
 
 
 @pytest.fixture(scope="session")
-def codex_adata() -> ad.AnnData:
-    """Load the two CODEX samples shared by the graph and shape tests."""
+def _codex_adata() -> ad.AnnData:
+    """Load the two CODEX samples once per test session."""
     return _load_codex(_CODEX_PATH)
+
+
+@pytest.fixture()
+def codex_adata(_codex_adata: ad.AnnData) -> ad.AnnData:
+    """Give each test its own copy of the CODEX samples."""
+    return _codex_adata.copy()
 
 
 def _load_codex(path: Path) -> ad.AnnData:
