@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sps
@@ -74,7 +73,7 @@ def _aggregate_neighbors(
     adj: sps.spmatrix,
     X: np.ndarray,
     nhood_layers: list,
-    aggregations: Optional[Union[str, list]] = "mean",
+    aggregations: str | list | None = "mean",
     disable_tqdm: bool = True,
 ) -> np.ndarray:
     adj = adj.astype(bool)
@@ -104,12 +103,12 @@ def _aggregate_neighbors(
 @d.dedent
 def aggregate_neighbors(
     adata: AnnData,
-    n_layers: Union[int, list],
-    aggregations: Optional[Union[str, list]] = "mean",
-    connectivity_key: Optional[str] = None,
-    use_rep: Optional[str] = None,
-    sample_key: Optional[str] = None,
-    out_key: Optional[str] = "X_cellcharter",
+    n_layers: int | list,
+    aggregations: str | list | None = "mean",
+    connectivity_key: str | None = None,
+    use_rep: str | None = None,
+    sample_key: str | None = None,
+    out_key: str | None = "X_cellcharter",
     copy: bool = False,
 ) -> np.ndarray | None:
     """

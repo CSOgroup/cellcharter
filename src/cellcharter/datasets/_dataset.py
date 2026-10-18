@@ -87,7 +87,7 @@ def _download_file(url: str, destination: Path) -> None:
     if not _is_hdf5_file(tmp_destination):
         tmp_destination.unlink(missing_ok=True)
         raise RuntimeError(
-            f"Downloaded file from {url} is not a valid HDF5 file. " "Please check network access and dataset URL."
+            f"Downloaded file from {url} is not a valid HDF5 file. Please check network access and dataset URL."
         )
 
     tmp_destination.replace(destination)

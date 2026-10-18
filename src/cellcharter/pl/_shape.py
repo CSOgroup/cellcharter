@@ -47,7 +47,7 @@ def plot_boundaries(
     """
     # Print warning and call boundaries
     warnings.warn(
-        "plot_boundaries is deprecated and will be removed in the next release. " "Please use `boundaries` instead.",
+        "plot_boundaries is deprecated and will be removed in the next release. Please use `boundaries` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -280,8 +280,7 @@ def plot_shape_metrics(
     """
     # Print warning and call shape_metrics
     warnings.warn(
-        "plot_shape_metrics is deprecated and will be removed in the next release. "
-        "Please use `shape_metrics` instead.",
+        "plot_shape_metrics is deprecated and will be removed in the next release. Please use `shape_metrics` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -420,12 +419,12 @@ def shape_metrics(
     --------
     Basic usage with automatic saving:
 
-    >>> cc.pl.shape_metrics(adata, condition_key='condition', save='plot.pdf')
+    >>> cc.pl.shape_metrics(adata, condition_key="condition", save="plot.pdf")
 
     Advanced usage with custom save parameters:
 
-    >>> fig = cc.pl.shape_metrics(adata, condition_key='condition', return_fig=True)
-    >>> fig.savefig('plot.pdf', dpi=300, bbox_inches='tight', transparent=True)
+    >>> fig = cc.pl.shape_metrics(adata, condition_key="condition", return_fig=True)
+    >>> fig.savefig("plot.pdf", dpi=300, bbox_inches="tight", transparent=True)
     """
     if isinstance(metrics, str):
         metrics = [metrics]
