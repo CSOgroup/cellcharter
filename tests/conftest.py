@@ -7,6 +7,7 @@ import anndata as ad
 import numpy as np
 import pytest
 import scanpy as sc
+from filelock import FileLock
 from squidpy._constants._pkg_constants import Key
 
 _adata = sc.read("tests/_data/test_data.h5ad")
@@ -57,19 +58,30 @@ def adata() -> ad.AnnData:
 
 @pytest.fixture(scope="session")
 def codex_adata() -> ad.AnnData:
+    """Load the two CODEX samples shared by the graph and shape tests."""
+    return _load_codex(_CODEX_PATH)
+
+
+def _load_codex(path: Path) -> ad.AnnData:
+    """Download and read the shared fixture without races between pytest workers."""
     max_retries = 3
     retry_delay = 5  # seconds
 
-    for attempt in range(max_retries):
-        try:
-            if not _is_hdf5_file(_CODEX_PATH):
-                _CODEX_PATH.unlink(missing_ok=True)
-                _download_codex(_CODEX_PATH)
-            adata = ad.read_h5ad(_CODEX_PATH)
-            adata.obs_names_make_unique()
-            return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
-        except (HTTPError, URLError, OSError) as e:
-            _CODEX_PATH.unlink(missing_ok=True)  # Force re-download on next attempt
-            if attempt == max_retries - 1:  # Last attempt
-                pytest.skip(f"Failed to download test data after {max_retries} attempts: {str(e)}")
-            time.sleep(retry_delay)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(path) + ".lock"):
+        for attempt in range(max_retries):
+            try:
+                if not _is_hdf5_file(path):
+                    path.unlink(missing_ok=True)
+                    _download_codex(path)
+                adata = ad.read_h5ad(path)
+            except (HTTPError, URLError, OSError, KeyError, ValueError) as e:
+                path.unlink(missing_ok=True)  # Force re-download on next attempt
+                if attempt == max_retries - 1:  # Last attempt
+                    pytest.skip(f"Failed to download test data after {max_retries} attempts: {str(e)}")
+                time.sleep(retry_delay)
+            else:
+                break
+
+    adata.obs_names_make_unique()
+    return adata[adata.obs["sample"].isin(["BALBc-1", "MRL-5"])].copy()
