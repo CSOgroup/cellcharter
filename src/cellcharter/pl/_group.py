@@ -68,6 +68,7 @@ def proportion(
     %(plotting)s
     kwargs
         Keyword arguments for :func:`pandas.DataFrame.plot.bar`.
+
     Returns
     -------
     %(plotting_returns)s

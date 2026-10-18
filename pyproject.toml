@@ -1,130 +1,161 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
-
-[tool.hatch.build]
-exclude = [
-  "docs*",
-  "tests*",
-]
+requires = [ "hatchling" ]
 
 [project]
 name = "cellcharter"
 version = "0.3.7"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
-license = {file = "LICENSE"}
-authors = [
-    {name = "CSO group"},
-]
+license = { file = "LICENSE" }
 maintainers = [
-    {name = "Marco Varrone", email = "marco.varrone@unil.ch"},
+  { name = "Marco Varrone", email = "marco.varrone@unil.ch" },
 ]
-urls.Documentation = "https://cellcharter.readthedocs.io/"
-urls.Source = "https://github.com/CSOgroup/cellcharter"
-urls.Home-page = "https://github.com/CSOgroup/cellcharter"
+authors = [
+  { name = "CSO group" },
+]
+requires-python = ">=3.12,<3.14"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 dependencies = [
-    "anndata",
-    "scikit-learn",
-    # scipy < 1.18 overflows when subsetting sparse obsp matrices of samples with > 46,340 cells (#108)
-    "scipy >= 1.18",
-    "squidpy >= 1.6.3",
-    "torchgmm >= 0.1.4",
-    # for debug logging (referenced from the issue template)
-    "session-info",
-    "rasterio",
-    "sknw",
-    "spatialdata",
-    "spatialdata-plot",
+  "anndata",
+  "rasterio",
+  "scikit-learn",
+  # scipy < 1.18 overflows when subsetting sparse obsp matrices of samples with > 46,340 cells (#108)
+  "scipy>=1.18",
+  "session-info2",
+  "sknw",
+  "spatialdata",
+  "spatialdata-plot",
+  "squidpy>=1.6.3",
+  "torchgmm>=0.1.4",
 ]
+optional-dependencies.proteomics = [ "scarches" ]
+optional-dependencies.transcriptomics = [ "scvi-tools" ]
+# https://docs.pypi.org/project_metadata/#project-urls
+urls.Documentation = "https://cellcharter.readthedocs.io/"
+urls.Homepage = "https://github.com/CSOgroup/cellcharter"
+urls.Source = "https://github.com/CSOgroup/cellcharter"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pre-commit",
-    "twine>=4.0.2"
-]
-doc = [
-    "docutils>=0.8,!=0.18.*,!=0.19.*",
-    "sphinx>=4",
-    "sphinx-book-theme>=1.0.0",
-    "myst-nb>=1.1.0",
-    "sphinxcontrib-bibtex>=1.0.0",
-    "sphinx-autodoc-typehints",
-    "sphinxext-opengraph",
-    # For notebooks
-    "ipykernel",
-    "ipython",
-    "sphinx-copybutton",
-    "sphinx-design"
+  "prek",
+  "twine>=4.0.2",
 ]
 test = [
-    "pytest",
-    "pytest-cov",
+  "coverage>=7.10",
+  "pytest",
+  "pytest-cov",     # For VS Code’s coverage functionality
 ]
-transcriptomics = [
-    "scvi-tools",
-]
-proteomics = [
-    "scarches",
-]
-
-[tool.coverage.run]
-source = ["cellcharter"]
-omit = [
-    "**/test_*.py",
-]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-xfail_strict = true
-addopts = [
-    "--import-mode=importlib",  # allow using test files with same name
-]
-filterwarnings = [
-    "ignore::anndata.OldFormatWarning",
-    "ignore:.*this fit will run with no optimizer.*",
-    "ignore:.*Consider increasing the value of the `num_workers` argument.*",
+doc = [
+  "ipykernel",
+  "ipython",
+  "myst-nb>=1.1",
+  "pandas",
+  "scverse-misc[sphinx]>=0.1.2",
+  "sphinx>=8.1",
+  "sphinx-autodoc-typehints",
+  "sphinx-book-theme>=1",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinxcontrib-bibtex>=1",
+  "sphinxcontrib-katex",
+  "sphinxext-opengraph",
 ]
 
-[tool.isort]
-include_trailing_comma = true
-multi_line_output = 3
-profile = "black"
-skip_glob = ["docs/*"]
+[tool.hatch]
+build.exclude = [ "docs*", "tests*" ]
+envs.default.installer = "uv"
+envs.default.dependency-groups = [ "dev" ]
+envs.docs.scripts.build = "sphinx-build -M html docs docs/_build {args}"
+envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
+envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
+envs.docs.dependency-groups = [ "doc" ]
+envs.hatch-test.matrix = [
+  # Test the lowest and highest supported Python versions with normal deps
+  { deps = [ "stable" ], python = [ "3.12", "3.13" ] },
+  # Test the newest supported Python version also with pre-release deps
+  { deps = [ "pre" ], python = [ "3.13" ] },
+]
+# If the matrix variable `deps` is set to "pre",
+# set the environment variable `UV_PRERELEASE` to "allow".
+envs.hatch-test.overrides.matrix.deps.env-vars = [
+  { value = "allow", key = "UV_PRERELEASE", if = [ "pre" ] },
+]
+envs.hatch-test.dependency-groups = [ "dev", "test" ]
 
-[tool.black]
+[tool.ruff]
 line-length = 120
-target-version = ['py38']
-include = '\.pyi?$'
-exclude = '''
-(
-  /(
-      \.eggs
-    | \.git
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-)
-'''
+src = [ "src" ]
+extend-include = [ "*.ipynb" ]
+format.docstring-code-format = true
+lint.select = [
+  "B",      # flake8-bugbear
+  "BLE",    # flake8-blind-except
+  "C4",     # flake8-comprehensions
+  "D",      # pydocstyle
+  "E",      # Error detected by Pycodestyle
+  "F",      # Errors detected by Pyflakes
+  "I",      # isort
+  "RUF100", # Report unused noqa directives
+  "TID",    # flake8-tidy-imports
+  "UP",     # pyupgrade
+  "W",      # Warning detected by Pycodestyle
+]
+lint.ignore = [
+  "B008", # Errors from function calls in argument defaults. These are fine when the result is immutable.
+  "D100", # Missing docstring in public module
+  "D104", # Missing docstring in public package
+  "D105", # __magic__ methods are often self-explanatory, allow missing docstrings
+  "D107", # Missing docstring in __init__
+  # Disable one in each pair of mutually incompatible rules
+  "D203", # We don’t want a blank line before a class docstring
+  "D213", # <> We want docstrings to start immediately after the opening triple quote
+  "D400", # first line should end with a period [Bug: doesn’t work with single-line docstrings]
+  "D401", # First line should be in imperative mood; try rephrasing
+  "E501", # line too long -> we accept long comment lines; formatter gets rid of long code lines
+  "E731", # Do not assign a lambda expression, use a def -> lambda expression assignments are convenient
+  "E741", # allow I, O, l as variable names -> I is the identity matrix
+]
+lint.per-file-ignores."*/__init__.py" = [ "F401" ]
+lint.per-file-ignores."docs/*" = [ "I" ]
+lint.per-file-ignores."tests/*" = [ "D" ]
+lint.pydocstyle.convention = "numpy"
+
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.addopts = [
+  "--import-mode=importlib", # allow using test files with same name
+]
+ini_options.xfail_strict = true
+ini_options.filterwarnings = [
+  "ignore:.*Consider increasing the value of the `num_workers` argument.*",
+  "ignore:.*this fit will run with no optimizer.*",
+  "ignore::anndata.OldFormatWarning",
+]
+
+[tool.coverage]
+run.omit = [
+  "**/test_*.py",
+]
+run.patch = [ "subprocess" ]
+run.source = [ "cellcharter" ]
 
 [tool.jupytext]
 formats = "ipynb,md"
 
 [tool.cruft]
 skip = [
-    "tests",
-    "src/**/__init__.py",
-    "src/**/basic.py",
-    "docs/api.md",
-    "docs/changelog.md",
-    "docs/references.bib",
-    "docs/references.md",
-    "docs/notebooks"
+  ".git",
+  "tests",
+  "src/**/__init__.py",
+  "src/**/basic.py",
+  "docs/api.md",
+  "docs/changelog.md",
+  "docs/references.bib",
+  "docs/references.md",
+  "docs/notebooks",
 ]

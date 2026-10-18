@@ -64,6 +64,7 @@ def _alpha_shape(coords, alpha):
         Alpha value to influence the gooeyness of the border. Smaller numbers
         don't fall inward as much as larger numbers. Too large, and you lose
         everything!
+
     Returns
     -------
     concave_hull : shapely.geometry.Polygon
@@ -110,7 +111,7 @@ def _process_component(points, component, hole_area_ratio=0.1, alpha_start=2000)
                 difference = boundary.difference(interior_polygon)
                 if isinstance(difference, geometry.Polygon):
                     boundary = difference
-            except Exception:  # noqa: B902
+            except Exception:  # noqa: BLE001 - Keep the original boundary if hole subtraction fails.
                 pass
     return component, boundary
 
@@ -136,6 +137,7 @@ def boundaries(
     alpha_start
         Starting value for the alpha parameter of the alpha shape algorithm.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the boundaries as values.
@@ -201,14 +203,14 @@ def _remove_dangling_branches(graph, min_ratio=0.05):
 
 def _longest_path_from_node(graph, u):
     visited = dict.fromkeys(graph.nodes)
-    distance = {i: -1 for i in list(graph.nodes)}
+    distance = dict.fromkeys(list(graph.nodes), -1)
     idx2node = dict(enumerate(graph.nodes))
 
     try:
         adj_lil = nx.to_scipy_sparse_matrix(graph, format="lil")
     except AttributeError:
         adj_lil = nx.to_scipy_sparse_array(graph, format="lil")
-    adj = {i: [idx2node[neigh] for neigh in neighs] for i, neighs in zip(graph.nodes, adj_lil.rows)}
+    adj = {i: [idx2node[neigh] for neigh in neighs] for i, neighs in zip(graph.nodes, adj_lil.rows, strict=False)}
     weight = nx.get_edge_attributes(graph, "weight")
 
     distance[u] = 0
@@ -301,7 +303,7 @@ def linearity(
         - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
     """
     warnings.warn(
-        "linearity is deprecated and will be removed in the next release. " "Please use `linearity_metric` instead.",
+        "linearity is deprecated and will be removed in the next release. Please use `linearity_metric` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -343,6 +345,7 @@ def linearity_metric(
     min_ratio
         Minimum ratio between the length of a branch and the total length of the skeleton to be considered a real branch and not be removed.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the linearity as values.
@@ -364,7 +367,7 @@ def linearity_metric(
 
 def _elongation(boundary):
     # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
-    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy, strict=False))
 
     # calculate the length of each side of the minimum bounding rectangle
     mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
@@ -403,7 +406,7 @@ def elongation(
         - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
     """
     warnings.warn(
-        "elongation is deprecated and will be removed in the next release. " "Please use `elongation_metric` instead.",
+        "elongation is deprecated and will be removed in the next release. Please use `elongation_metric` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -435,6 +438,7 @@ def elongation_metric(
     out_key
         Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the elongation as values.
@@ -455,7 +459,7 @@ def elongation_metric(
 
 def _axes(boundary):
     # get the minimum bounding rectangle and zip coordinates into a list of point-tuples
-    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy))
+    mbr_points = list(zip(*boundary.minimum_rotated_rectangle.exterior.coords.xy, strict=False))
     # calculate the length of each side of the minimum bounding rectangle
     mbr_lengths = [geometry.LineString((mbr_points[i], mbr_points[i + 1])).length for i in range(len(mbr_points) - 1)]
     return min(mbr_lengths), max(mbr_lengths)
@@ -502,7 +506,7 @@ def curl(
         - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
     """
     warnings.warn(
-        "curl is deprecated and will be removed in the next release. " "Please use `curl_metric` instead.",
+        "curl is deprecated and will be removed in the next release. Please use `curl_metric` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -532,6 +536,7 @@ def curl_metric(
     cluster_key
         Key in :attr:`anndata.AnnData.obs` where the cluster labels are stored.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the curl score as values.
@@ -584,7 +589,7 @@ def purity(
         - :attr:`anndata.AnnData.uns` ``['shape_{{cluster_key}}']['{{out_key}}']`` - the above mentioned :class:`dict`.
     """
     warnings.warn(
-        "purity is deprecated and will be removed in the next release. " "Please use `purity_metric` instead.",
+        "purity is deprecated and will be removed in the next release. Please use `purity_metric` instead.",
         FutureWarning,
         stacklevel=2,
     )
@@ -624,6 +629,7 @@ def purity_metric(
     exterior
         If ``True``, the computation of the purity ignores the polygon's internal holes.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the purity as values.
@@ -683,6 +689,7 @@ def relative_component_size_metric(
     out_key
         Key in :attr:`anndata.AnnData.obs` where the metric values are stored if ``copy = False``.
     %(copy)s
+
     Returns
     -------
     If ``copy = True``, returns a :class:`dict` with the cluster labels as keys and the RCS as values.

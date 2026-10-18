@@ -10,7 +10,7 @@ import warnings
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import anndata as ad
 import numpy as np
@@ -47,10 +47,11 @@ class ClusterAutoK:
         Keyword args for `model_class`
     similarity_function
         The similarity function used between clustering results. Defaults to :func:`sklearn.metrics.fowlkes_mallows_score`.
+
     Examples
     --------
     >>> adata = anndata.read_h5ad(path_to_anndata)
-    >>> sq.gr.spatial_neighbors(adata, coord_type='generic', delaunay=True)
+    >>> sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
     >>> cc.gr.remove_long_links(adata)
     >>> cc.gr.aggregate_neighbors(adata, n_layers=3)
     >>> model_params = {
@@ -60,7 +61,9 @@ class ClusterAutoK:
                 'enable_progress_bar': False
             },
         }
-    >>> models = cc.tl.ClusterAutoK(n_clusters=(2,10), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=5)
+    >>> models = cc.tl.ClusterAutoK(
+    ...     n_clusters=(2, 10), model_class=cc.tl.GaussianMixture, model_params=model_params, max_runs=5
+    ... )
     """
 
     #: The cluster assignments for each repetition and number of clusters.
@@ -94,7 +97,7 @@ class ClusterAutoK:
         self.stability = []
 
     @property
-    def _fit_n_clusters(self) -> List[int]:
+    def _fit_n_clusters(self) -> list[int]:
         """Numbers of clusters to fit: each K in `n_clusters` together with its neighbors K-1 and K+1."""
         return sorted({k + d for k in self.n_clusters for d in (-1, 0, 1)})
 
@@ -190,7 +193,7 @@ class ClusterAutoK:
         return self.n_clusters[np.argmax(stability_mean)]
 
     @property
-    def peaks(self) -> List[int]:
+    def peaks(self) -> list[int]:
         """Find the peaks in the stability curve."""
         if self.max_runs <= 1:
             raise ValueError("Cannot compute stability with max_runs <= 1")
@@ -217,12 +220,14 @@ class ClusterAutoK:
         X = (
             adata.obsm[use_rep]
             if use_rep is not None
-            else adata.obsm["X_cellcharter"] if "X_cellcharter" in adata.obsm else adata.X
+            else adata.obsm["X_cellcharter"]
+            if "X_cellcharter" in adata.obsm
+            else adata.X
         )
         return pd.Categorical(self.best_models[k].predict(X).astype(str), categories=np.arange(k).astype(str))
 
     @property
-    def persistent_attributes(self) -> List[str]:
+    def persistent_attributes(self) -> list[str]:
         """Returns the list of fitted attributes that ought to be saved and loaded. By default, this encompasses all annotations."""
         return list(self.__annotations__.keys())
 
@@ -320,8 +325,9 @@ class ClusterAutoK:
         ----------
         path
             The directory from which to load the estimator.
+
         Returns
-        ----------
+        -------
             The loaded estimator, either fitted or not.
         """
         path = Path(path)
@@ -374,8 +380,9 @@ class ClusterAutoK:
         ----------
         path
             The directory from which the parameters should be loaded.
+
         Raises
-        ----------
+        ------
         FileNotFoundError
             If the no fitted attributes have been stored.
         """
@@ -400,7 +407,7 @@ class ClusterAutoK:
 
             self.best_models[model.n_clusters] = model
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Returns the estimator's parameters as passed to the initializer.
 
@@ -408,15 +415,16 @@ class ClusterAutoK:
         ----------
         deep
             Ignored. For Scikit-learn compatibility.
+
         Returns
-        ----------
+        -------
             The mapping from init parameters to values.
         """
         signature = inspect.signature(self.__class__.__init__)
         parameters = [p.name for p in signature.parameters.values() if p.name != "self"]
         return {p: getattr(self, p) for p in parameters}
 
-    def set_params(self, values: Dict[str, Any]):
+    def set_params(self, values: dict[str, Any]):
         """
         Sets the provided values. The estimator is returned as well, but the estimator on which this function is called is also modified.
 
@@ -424,8 +432,9 @@ class ClusterAutoK:
         ----------
         values
             The values to set.
+
         Returns
-        ----------
+        -------
             The estimator where the values have been set.
         """
         for key, value in values.items():

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from copy import copy
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 import matplotlib as mpl
 import numpy as np

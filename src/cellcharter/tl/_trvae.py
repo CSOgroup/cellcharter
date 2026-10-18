@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from anndata import AnnData, read_h5ad
 from torch import nn
@@ -55,14 +54,14 @@ except ImportError:
             self,
             adata: AnnData,
             condition_key: str = None,
-            conditions: Optional[list] = None,
+            conditions: list | None = None,
             hidden_layer_sizes: list | tuple = (256, 64),
             latent_dim: int = 10,
             dr_rate: float = 0.05,
             use_mmd: bool = True,
             mmd_on: str = "z",
-            mmd_boundary: Optional[int] = None,
-            recon_loss: Optional[str] = "nb",
+            mmd_boundary: int | None = None,
+            recon_loss: str | None = "nb",
             beta: float = 1,
             use_bn: bool = False,
             use_ln: bool = True,
@@ -70,7 +69,7 @@ except ImportError:
             raise ImportError("scarches is not installed. Please install scarches to use this method.")
 
         @classmethod
-        def load(cls, dir_path: str, adata: Optional[AnnData] = None, map_location: Optional[str] = None):
+        def load(cls, dir_path: str, adata: AnnData | None = None, map_location: str | None = None):
             """
             Instantiate a model from the saved output.
 
@@ -83,6 +82,7 @@ except ImportError:
                 If None, will check for and load anndata saved with the model.
             map_location
                 Location where all tensors should be loaded (e.g., `torch.device('cpu')`)
+
             Returns
             -------
                 Model with loaded state dictionaries.
@@ -134,14 +134,14 @@ else:
             self,
             adata: AnnData,
             condition_key: str = None,
-            conditions: Optional[list] = None,
+            conditions: list | None = None,
             hidden_layer_sizes: list | tuple = (256, 64),
             latent_dim: int = 10,
             dr_rate: float = 0.05,
             use_mmd: bool = True,
             mmd_on: str = "z",
-            mmd_boundary: Optional[int] = None,
-            recon_loss: Optional[str] = "mse",
+            mmd_boundary: int | None = None,
+            recon_loss: str | None = "mse",
             beta: float = 1,
             use_bn: bool = False,
             use_ln: bool = True,
@@ -197,7 +197,7 @@ else:
             self.trainer = None
 
         @classmethod
-        def load(cls, dir_path: str, adata: Optional[AnnData] = None, map_location: Optional[str] = None):
+        def load(cls, dir_path: str, adata: AnnData | None = None, map_location: str | None = None):
             """
             Instantiate a model from the saved output.
 
@@ -210,6 +210,7 @@ else:
                 If None, will check for and load anndata saved with the model.
             map_location
                 Location where all tensors should be loaded (e.g., `torch.device('cpu')`)
+
             Returns
             -------
                 Model with loaded state dictionaries.

@@ -296,16 +296,12 @@ class TestRelativeComponentSize:
             balbc_domain0_count + mrl_domain0_count : balbc_domain0_count + mrl_domain0_count + balbc_comp2_count
         ] = 2  # BALBc-1 domain 1 first part gets component 2
         components[
-            balbc_domain0_count
-            + mrl_domain0_count
-            + balbc_comp2_count : balbc_domain0_count
+            balbc_domain0_count + mrl_domain0_count + balbc_comp2_count : balbc_domain0_count
             + mrl_domain0_count
             + balbc_domain1_count
         ] = 3  # BALBc-1 domain 1 second part gets component 3
         components[
-            balbc_domain0_count
-            + mrl_domain0_count
-            + balbc_domain1_count : balbc_domain0_count
+            balbc_domain0_count + mrl_domain0_count + balbc_domain1_count : balbc_domain0_count
             + mrl_domain0_count
             + balbc_domain1_count
             + mrl_comp4_count
@@ -395,16 +391,12 @@ class TestRelativeComponentSize:
             balbc_domain0_count + mrl_domain0_count : balbc_domain0_count + mrl_domain0_count + balbc_comp2_count
         ] = 2  # BALBc-1 domain 1 first part gets component 2
         components[
-            balbc_domain0_count
-            + mrl_domain0_count
-            + balbc_comp2_count : balbc_domain0_count
+            balbc_domain0_count + mrl_domain0_count + balbc_comp2_count : balbc_domain0_count
             + mrl_domain0_count
             + balbc_domain1_count
         ] = 3  # BALBc-1 domain 1 second part gets component 3
         components[
-            balbc_domain0_count
-            + mrl_domain0_count
-            + balbc_domain1_count : balbc_domain0_count
+            balbc_domain0_count + mrl_domain0_count + balbc_domain1_count : balbc_domain0_count
             + mrl_domain0_count
             + balbc_domain1_count
             + mrl_comp4_count
