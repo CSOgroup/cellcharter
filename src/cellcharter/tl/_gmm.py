@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import random
-from typing import List, Tuple, cast
+from typing import cast
 
 import anndata as ad
 import numpy as np
@@ -107,8 +107,9 @@ class GaussianMixture(TorchGaussianMixture):
         ----------
         data
             The tabular data to fit on. The dimensionality of the Gaussian mixture is automatically inferred from this data.
+
         Returns
-        ----------
+        -------
             The fitted Gaussian mixture.
         """
         if sps.issparse(data):
@@ -161,8 +162,9 @@ class GaussianMixture(TorchGaussianMixture):
         ----------
         data
             The datapoints for which to obtain the most likely components.
+
         Returns
-        ----------
+        -------
             A tensor of shape ``[num_datapoints]`` with the indices of the most likely components.
         Note
         ----------
@@ -185,8 +187,9 @@ class GaussianMixture(TorchGaussianMixture):
         ----------
         data
             The datapoints for which to compute the component assignment probabilities.
+
         Returns
-        ----------
+        -------
             A tensor of shape ``[num_datapoints, num_components]`` with the assignment
             probabilities for each component and datapoint. Note that each row of the vector sums
             to 1, i.e. the returned tensor provides a proper distribution over the components for
@@ -206,7 +209,7 @@ class GaussianMixture(TorchGaussianMixture):
         trainer_params["logger"] = False
         with silence_lightning():
             result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
-        return torch.cat([x[0] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
+        return torch.cat([x[0] for x in cast(list[tuple[torch.Tensor, torch.Tensor]], result)])
 
     def score_samples(self, data: TensorLike) -> torch.Tensor:
         """
@@ -216,8 +219,9 @@ class GaussianMixture(TorchGaussianMixture):
         ----------
         data
             The datapoints for which to compute the NLL.
+
         Returns
-        ----------
+        -------
             A tensor of shape ``[num_datapoints]`` with the NLL for each datapoint.
         Attention
         ----------
@@ -234,7 +238,7 @@ class GaussianMixture(TorchGaussianMixture):
         trainer_params["logger"] = False
         with silence_lightning():
             result = Trainer(**trainer_params).predict(GaussianMixtureLightningModule(self.model_), loader)
-        return torch.stack([x[1] for x in cast(List[Tuple[torch.Tensor, torch.Tensor]], result)])
+        return torch.stack([x[1] for x in cast(list[tuple[torch.Tensor, torch.Tensor]], result)])
 
 
 class Cluster(GaussianMixture):
@@ -271,14 +275,15 @@ class Cluster(GaussianMixture):
         - ``max_epochs=100``.
     random_state
         Initialization seed.
+
     Examples
     --------
     >>> adata = anndata.read_h5ad(path_to_anndata)
-    >>> sq.gr.spatial_neighbors(adata, coord_type='generic', delaunay=True)
+    >>> sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
     >>> cc.gr.remove_long_links(adata)
     >>> cc.gr.aggregate_neighbors(adata, n_layers=3)
     >>> model = cc.tl.Cluster(n_clusters=11)
-    >>> model.fit(adata, use_rep='X_cellcharter')
+    >>> model.fit(adata, use_rep="X_cellcharter")
     """
 
     def __init__(

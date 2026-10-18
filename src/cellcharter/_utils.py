@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, Union
+from typing import Union
 
 import numpy as np
 
 AnyRandom = Union[int, np.random.RandomState, None]
 
 
-def str2list(value: Union[str, list]) -> list:
+def str2list(value: str | list) -> list:
     """Check whether value is a string. If so, converts into a list containing value."""
     return [value] if isinstance(value, str) else value
 

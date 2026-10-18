@@ -22,25 +22,23 @@ classifiers = [
 ]
 dependencies = [
   "anndata",
+  "rasterio",
   "scikit-learn",
   # scipy < 1.18 overflows when subsetting sparse obsp matrices of samples with > 46,340 cells (#108)
-  "scipy >= 1.18",
-  "squidpy >= 1.6.3",
-  "torchgmm >= 0.1.4",
+  "scipy>=1.18",
   "session-info2",
-  "rasterio",
   "sknw",
   "spatialdata",
   "spatialdata-plot",
+  "squidpy>=1.6.3",
+  "torchgmm>=0.1.4",
 ]
+optional-dependencies.proteomics = [ "scarches" ]
+optional-dependencies.transcriptomics = [ "scvi-tools" ]
 # https://docs.pypi.org/project_metadata/#project-urls
 urls.Documentation = "https://cellcharter.readthedocs.io/"
 urls.Homepage = "https://github.com/CSOgroup/cellcharter"
 urls.Source = "https://github.com/CSOgroup/cellcharter"
-
-[project.optional-dependencies]
-transcriptomics = [ "scvi-tools" ]
-proteomics = [ "scarches" ]
 
 [dependency-groups]
 dev = [
@@ -68,10 +66,8 @@ doc = [
   "sphinxext-opengraph",
 ]
 
-[tool.hatch.build]
-exclude = [ "docs*", "tests*" ]
-
 [tool.hatch]
+build.exclude = [ "docs*", "tests*" ]
 envs.default.installer = "uv"
 envs.default.dependency-groups = [ "dev" ]
 envs.docs.scripts.build = "sphinx-build -M html docs docs/_build {args}"
@@ -129,20 +125,17 @@ lint.per-file-ignores."docs/*" = [ "I" ]
 lint.per-file-ignores."tests/*" = [ "D" ]
 lint.pydocstyle.convention = "numpy"
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-xfail_strict = true
-addopts = [
-    "--import-mode=importlib",  # allow using test files with same name
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.addopts = [
+  "--import-mode=importlib", # allow using test files with same name
 ]
-filterwarnings = [
-    "ignore::anndata.OldFormatWarning",
-    "ignore:.*this fit will run with no optimizer.*",
-    "ignore:.*Consider increasing the value of the `num_workers` argument.*",
+ini_options.xfail_strict = true
+ini_options.filterwarnings = [
+  "ignore:.*Consider increasing the value of the `num_workers` argument.*",
+  "ignore:.*this fit will run with no optimizer.*",
+  "ignore::anndata.OldFormatWarning",
 ]
-
-[tool.jupytext]
-formats = "ipynb,md"
 
 [tool.coverage]
 run.omit = [
@@ -150,6 +143,9 @@ run.omit = [
 ]
 run.patch = [ "subprocess" ]
 run.source = [ "cellcharter" ]
+
+[tool.jupytext]
+formats = "ipynb,md"
 
 [tool.cruft]
 skip = [
