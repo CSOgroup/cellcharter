@@ -5,7 +5,10 @@ requires = [ "hatchling" ]
 [project]
 name = "cellcharter"
 version = "0.3.8"
-description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
+description = """\
+  A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics \
+  data.\
+  """
 readme = "README.md"
 license = { file = "LICENSE" }
 maintainers = [
@@ -139,11 +142,11 @@ ini_options.filterwarnings = [
 ]
 
 [tool.coverage]
+run.source = [ "cellcharter" ]
 run.omit = [
   "**/test_*.py",
 ]
 run.patch = [ "subprocess" ]
-run.source = [ "cellcharter" ]
 
 [tool.jupytext]
 formats = "ipynb,md"
