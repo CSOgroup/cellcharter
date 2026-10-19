@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "cellcharter"
-version = "0.3.7"
+version = "0.3.8"
 description = "A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics data."
 readme = "README.md"
 license = { file = "LICENSE" }
