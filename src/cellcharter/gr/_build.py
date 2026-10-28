@@ -139,6 +139,10 @@ def remove_intra_cluster_links(
 
 
 def _connected_components(adj: sps.spmatrix, min_cells: int = 250, count: int = 0) -> np.ndarray:
+    # scipy.sparse.csgraph works reliably with sparse matrices; convert sparse arrays/views if needed.
+    if sps.issparse(adj) and not isinstance(adj, sps.spmatrix):
+        adj = sps.csr_matrix(adj)
+
     n_components, labels = sps.csgraph.connected_components(adj, return_labels=True)
     components, counts = np.unique(labels, return_counts=True)
 
@@ -191,12 +195,11 @@ def connected_components(
         cluster_values = adata.obs[cluster_key].unique()
 
         for cluster in cluster_values:
-            adata_cluster = adata[adata.obs[cluster_key] == cluster]
+            cluster_mask = (adata.obs[cluster_key] == cluster).values
+            adj_cluster = adata.obsp[connectivity_key][cluster_mask, :][:, cluster_mask]
 
-            labels, n_components = _connected_components(
-                adj=adata_cluster.obsp[connectivity_key], min_cells=min_cells, count=count
-            )
-            output[adata.obs[cluster_key] == cluster] = labels
+            labels, n_components = _connected_components(adj=adj_cluster, min_cells=min_cells, count=count)
+            output[cluster_mask] = labels
             count += n_components
     else:
         labels, n_components = _connected_components(
