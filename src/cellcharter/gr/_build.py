@@ -7,7 +7,8 @@ from anndata import AnnData
 from scipy.sparse import csr_matrix
 from squidpy._constants._pkg_constants import Key
 from squidpy._docs import d
-from squidpy.gr._utils import _assert_connectivity_key
+
+from cellcharter.gr._utils import _assert_connectivity_key
 
 
 @d.dedent

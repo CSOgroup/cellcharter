@@ -11,10 +11,11 @@ import scipy.sparse as sp
 from anndata import AnnData
 from squidpy._constants._pkg_constants import Key
 from squidpy._docs import d
-from squidpy.gr._utils import _assert_categorical_obs, _assert_connectivity_key
+from squidpy.gr._utils import _assert_categorical_obs
 from tqdm.auto import tqdm
 
 from cellcharter.gr._build import _remove_intra_cluster_links
+from cellcharter.gr._utils import _assert_connectivity_key
 
 
 def _observed_n_clusters_links(adj, labels, symmetric=True):
