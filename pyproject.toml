@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "cellcharter"
-version = "0.3.8"
+version = "0.3.9"
 description = """\
   A Python package for the identification, characterization and comparison of spatial clusters from spatial -omics \
   data.\
@@ -17,11 +17,12 @@ maintainers = [
 authors = [
   { name = "CSO group" },
 ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "anndata",
@@ -34,7 +35,7 @@ dependencies = [
   "spatialdata",
   "spatialdata-plot",
   "squidpy>=1.6.3",
-  "torchgmm>=0.1.4",
+  "torchgmm>=0.1.5",
 ]
 optional-dependencies.proteomics = [ "scarches" ]
 optional-dependencies.transcriptomics = [ "scvi-tools" ]
@@ -80,9 +81,9 @@ envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 envs.docs.dependency-groups = [ "doc" ]
 envs.hatch-test.matrix = [
   # Test the lowest and highest supported Python versions with normal deps
-  { deps = [ "stable" ], python = [ "3.12", "3.13" ] },
+  { deps = [ "stable" ], python = [ "3.12", "3.14" ] },
   # Test the newest supported Python version also with pre-release deps
-  { deps = [ "pre" ], python = [ "3.13" ] },
+  { deps = [ "pre" ], python = [ "3.14" ] },
 ]
 # If the matrix variable `deps` is set to "pre",
 # set the environment variable `UV_PRERELEASE` to "allow".
@@ -128,6 +129,9 @@ lint.per-file-ignores."*/__init__.py" = [ "F401" ]
 lint.per-file-ignores."docs/*" = [ "I" ]
 lint.per-file-ignores."tests/*" = [ "D" ]
 lint.pydocstyle.convention = "numpy"
+
+[tool.pyproject-fmt]
+max_supported_python = "3.14"
 
 [tool.pytest]
 ini_options.testpaths = [ "tests" ]

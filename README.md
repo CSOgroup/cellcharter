@@ -1,5 +1,19 @@
 <div align="center">
-<img src="https://github.com/CSOgroup/cellcharter/raw/main/docs/_static/cellcharter.png" width="400px">
+    <picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/_static/cellcharter-lockup-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/_static/cellcharter-lockup-light.svg"
+  >
+  <img
+    alt="CellCharter logo"
+    src="docs/_static/cellcharter-lockup-light.svg"
+    width="300"
+  >
+</picture>
 
 **A Python package for the identification, characterization and comparison of spatial clusters from spatial omics data.**
 
